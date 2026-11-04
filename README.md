@@ -8,7 +8,9 @@
 
 **分享链接**：https://chounaozi-notes.app.workbuddy.host/?sharecode=QFG2KJ22VF
 
-这是当前工作区发布的可访问预览（单端口 Node 服务，**不是 Vercel**）。本环境没有配置 DeepSeek Key，因此页面顶部会显示「演示模式」，由服务端返回兜底文案；录入、延展、配文、明信片、提醒、日历筛选、今日最臭海报、标签 CRUD 全部可点通。正式 Vercel 地址需要用自己的 Vercel 账号导入仓库后生成，步骤见「部署到 Vercel」。
+这是当前工作区发布的可访问预览（单端口 Node 服务，**不是 Vercel**）。线上预览沙箱未注入 DeepSeek Key，因此页面顶部会显示「演示模式」，由服务端返回兜底文案；录入、延展、配文、明信片、提醒、日历筛选、今日最臭海报、标签 CRUD 全部可点通。
+
+本机 `.env.local` 已填入 Key，`npm run dev` / `npm start` 会直接调用真实 `deepseek-flash`（`source: "deepseek"`）。想让线上预览也用真实模型，需要重新发布一次并把 Key 作为服务端环境变量带上；正式 Vercel 部署则在 Project Settings → Environment Variables 配置，步骤见「部署到 Vercel」。
 
 ## 范围（已拍板，不再扩展）
 
@@ -70,11 +72,37 @@ npm start                      # http://localhost:3000，监听 0.0.0.0:$PORT
 
 ## 部署到 Vercel
 
-1. 把本仓库推到 GitHub（仓库：`https://github.com/393535466-dev/Scabby-Head-1105.git`），在 Vercel 选择 **Add New → Project → Import Git Repository**。本地仓库已 `git init`、已提交并配置好 `origin`；当前环境没有推送凭据，需在本机认证后执行：
+1. 把本仓库推到 GitHub（仓库：`https://github.com/393535466-dev/Scabby-Head-1105.git`），再在 Vercel 选择 **Add New → Project → Import Git Repository**。本地仓库已 `git init`、已提交并配置好 `origin`；当前环境没有推送凭据，需在本机认证后执行：
    ```bash
-   git push -u origin main          # 用 Personal Access Token 或 gh auth login 认证
+   git push -u origin main
    ```
-   GitHub 已不支持账号密码推送（直接推会报 `Invalid username or token`）。
+   GitHub 已不支持账号密码推送（直接推会报 `Invalid username or token`）。任选一种认证方式：
+
+   **方式 A · GitHub CLI（推荐）**
+   ```bash
+   brew install gh
+   gh auth login          # GitHub.com → HTTPS → Login with a web browser，按提示在浏览器完成授权
+   git push -u origin main
+   ```
+
+   **方式 B · Personal Access Token + macOS 钥匙串（不装任何工具）**
+   1. GitHub → 右上角头像 → **Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token (classic)**
+   2. Note 随意、Expiration 选 90 天、勾选 **`repo`** → Generate token → **立刻复制**（只显示一次）
+   3. 本机执行：
+      ```bash
+      git config --global credential.helper osxkeychain
+      git push -u origin main
+      ```
+      Username 填 `393535466-dev`，Password **粘贴 PAT**（不是账号密码）。凭据存进钥匙串，之后推送免输。
+
+   **方式 C · 一次性带 Token 的 URL（临时机器）**
+   ```bash
+   git remote set-url origin https://393535466-dev:<PAT>@github.com/393535466-dev/Scabby-Head-1105.git
+   git push -u origin main
+   git remote set-url origin https://github.com/393535466-dev/Scabby-Head-1105.git   # 推完立刻改回，避免明文留存
+   ```
+   > 若建仓时勾选了初始化 README，推送会报非快进：先 `git pull --rebase origin main` 再推。
+   > PAT 只用于认证，**不要写进任何会被提交的文件**；`.env.local` 同样不要进仓库。
 2. Framework Preset 选 **Vite**（`vercel.json` 已声明），Build Command `npm run build`，Output Directory `dist`，其余默认。
 3. **Project Settings → Environment Variables** 新增：
    - `DEEPSEEK_API_KEY` = 你的 DeepSeek Key（Production / Preview 按需勾选）

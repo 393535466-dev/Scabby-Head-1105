@@ -13,6 +13,24 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dist = path.join(root, 'dist');
 const PORT = Number(process.env.PORT) || 3000;
 
+/**
+ * 本地 .env.local 兜底加载：只读取 DEEPSEEK_* 键，且进程环境变量优先。
+ * 生产环境（Vercel Function / 托管平台）由平台注入 process.env，不依赖此文件。
+ * 该文件仅存在于服务端，dist/ 静态托管目录取不到它。
+ */
+function loadLocalEnv() {
+  const file = path.join(root, '.env.local');
+  if (!fs.existsSync(file)) return;
+  for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+    const m = /^\s*(DEEPSEEK_[A-Z0-9_]+)\s*=\s*(.*)\s*$/.exec(line);
+    if (!m) continue;
+    const key = m[1];
+    const value = m[2].trim().replace(/^['"]|['"]$/g, '');
+    if (!process.env[key] && value) process.env[key] = value;
+  }
+}
+loadLocalEnv();
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',

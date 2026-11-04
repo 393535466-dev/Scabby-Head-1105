@@ -72,7 +72,7 @@ npm start                      # http://localhost:3000，监听 0.0.0.0:$PORT
 
 ## 部署到 Vercel
 
-1. 把本仓库推到 GitHub（仓库：`https://github.com/393535466-dev/Scabby-Head-1105.git`），再在 Vercel 选择 **Add New → Project → Import Git Repository**。本地仓库已 `git init`、已提交并配置好 `origin`；当前环境没有推送凭据，需在本机认证后执行：
+1. 把本仓库推到 GitHub（仓库：`https://github.com/393535466-dev/Scabby-Head-1105.git`），再在 Vercel 选择 **Add New → Project → Import Git Repository**。本地仓库已 `git init`、已提交、配置好 `origin`，并已推送到该仓库（首次推送需要认证，方式见下）：
    ```bash
    git push -u origin main
    ```

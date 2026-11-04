@@ -4,6 +4,12 @@
 
 > 「臭脑子」只是产品壳，**不表示系统默认嘲讽用户**。默认语气是「温和」，用户随时可改。
 
+## 在线预览
+
+**分享链接**：https://chounaozi-notes.app.workbuddy.host/?sharecode=QFG2KJ22VF
+
+这是当前工作区发布的可访问预览（单端口 Node 服务，**不是 Vercel**）。本环境没有配置 DeepSeek Key，因此页面顶部会显示「演示模式」，由服务端返回兜底文案；录入、延展、配文、明信片、提醒、日历筛选、今日最臭海报、标签 CRUD 全部可点通。正式 Vercel 地址需要用自己的 Vercel 账号导入仓库后生成，步骤见「部署到 Vercel」。
+
 ## 范围（已拍板，不再扩展）
 
 | 做 | 不做 |
@@ -60,9 +66,15 @@ npm run build
 npm start                      # http://localhost:3000，监听 0.0.0.0:$PORT
 ```
 
+`npm start` 会通过 `prestart` 自动先执行 `npm run build`，适合「一个 HTTP 端口」的托管环境；只想启动已构建产物时用 `npm run serve`。
+
 ## 部署到 Vercel
 
-1. 把本仓库推到 GitHub（仓库：`https://github.com/393535466-dev/Scabby-Head-1105.git`），在 Vercel 选择 **Add New → Project → Import Git Repository**。
+1. 把本仓库推到 GitHub（仓库：`https://github.com/393535466-dev/Scabby-Head-1105.git`），在 Vercel 选择 **Add New → Project → Import Git Repository**。本地仓库已 `git init`、已提交并配置好 `origin`；当前环境没有推送凭据，需在本机认证后执行：
+   ```bash
+   git push -u origin main          # 用 Personal Access Token 或 gh auth login 认证
+   ```
+   GitHub 已不支持账号密码推送（直接推会报 `Invalid username or token`）。
 2. Framework Preset 选 **Vite**（`vercel.json` 已声明），Build Command `npm run build`，Output Directory `dist`，其余默认。
 3. **Project Settings → Environment Variables** 新增：
    - `DEEPSEEK_API_KEY` = 你的 DeepSeek Key（Production / Preview 按需勾选）

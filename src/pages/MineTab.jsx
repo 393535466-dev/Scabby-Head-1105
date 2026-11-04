@@ -1,0 +1,193 @@
+import React, { useState } from 'react';
+import { useStore } from '../lib/store.jsx';
+import { TONES, DIRECTIONS, DIRECTION_HINT } from '../lib/constants.js';
+import { callAI } from '../lib/ai.js';
+import ChipGroup from '../components/ChipGroup.jsx';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import Icon from '../components/Icons.jsx';
+
+const PERM_LABEL = {
+  granted: '已开启',
+  denied: '被浏览器拒绝',
+  default: '未开启',
+  unsupported: '当前浏览器不支持',
+};
+
+export default function MineTab() {
+  const {
+    records, settings, updateSettings, addTag, renameTag, removeTag,
+    exportJSON, clearRecords, showToast, setAiSource,
+  } = useStore();
+  const [newTag, setNewTag] = useState('');
+  const [editing, setEditing] = useState(null);
+  const [editValue, setEditValue] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [confirm, setConfirm] = useState(null);
+  const [perm, setPerm] = useState(typeof Notification === 'undefined' ? 'unsupported' : Notification.permission);
+
+  const submitTag = () => {
+    const t = newTag.trim().slice(0, 12);
+    if (!t) return;
+    if (settings.tags.includes(t)) { showToast('这个标签已经有了'); return; }
+    addTag(t);
+    setNewTag('');
+    showToast(`已添加「${t}」`);
+  };
+
+  const suggest = async () => {
+    setBusy(true);
+    try {
+      const result = await callAI('suggestTags', {
+        existing: settings.tags,
+        recent: records.slice(0, 15).map((r) => r.text || '（照片）'),
+      });
+      setAiSource(result.source);
+      const list = (result.data.tags || []).filter((t) => !settings.tags.includes(t));
+      setSuggestions(list);
+      showToast(list.length ? '建议好了，点一下就能加' : '暂时没有新建议');
+    } catch (err) {
+      showToast(err.message || '建议失败');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const requestNotify = async () => {
+    if (!('Notification' in window)) { showToast('当前浏览器不支持通知'); return; }
+    try {
+      const p = await Notification.requestPermission();
+      setPerm(p);
+      showToast(p === 'granted' ? '提醒已开启，页面开着就会弹通知' : '到期列表仍会高亮');
+    } catch {
+      showToast('授权没成功，到期列表仍会高亮');
+    }
+  };
+
+  return (
+    <div className="page">
+      <section className="card">
+        <div className="section-head"><h2>默认加工设置</h2></div>
+        <div className="field">
+          <label>默认语气（每次加工可覆盖）</label>
+          <ChipGroup options={TONES} value={settings.defaultTone} onChange={(v) => updateSettings({ defaultTone: v })} />
+        </div>
+        <div className="divider" />
+        <div className="field">
+          <label>默认推演方向</label>
+          <ChipGroup options={DIRECTIONS} value={settings.defaultDirection} onChange={(v) => updateSettings({ defaultDirection: v })} />
+          <p className="hint">{DIRECTION_HINT[settings.defaultDirection] || ''} · 方向只决定单次生成，不是气味标签</p>
+        </div>
+      </section>
+
+      <section className="card">
+        <div className="section-head"><h2>气味标签</h2><span className="muted small">{settings.tags.length} 个</span></div>
+        <p className="hint">长期个人画像标签。可自定义增删改，能打在记录上，日历按它筛选。和本次推演方向完全分开。</p>
+        {settings.tags.length === 0 ? (
+          <p className="hint">还没有标签，先加一个吧。</p>
+        ) : (
+          <div className="tag-list">
+            {settings.tags.map((t) => {
+              const count = records.filter((r) => (r.tags || []).includes(t)).length;
+              return (
+                <div className="tag-row" key={t}>
+                  {editing === t ? (
+                    <input
+                      className="text-input compact"
+                      value={editValue}
+                      maxLength={12}
+                      autoFocus
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') { renameTag(t, editValue); setEditing(null); }
+                        if (e.key === 'Escape') setEditing(null);
+                      }}
+                    />
+                  ) : (
+                    <span className="tag-name">{t}</span>
+                  )}
+                  <span className="muted small">{count} 条</span>
+                  <div className="tag-actions">
+                    {editing === t ? (
+                      <>
+                        <button type="button" className="link-btn" onClick={() => { renameTag(t, editValue); setEditing(null); }}>保存</button>
+                        <button type="button" className="link-btn" onClick={() => setEditing(null)}>取消</button>
+                      </>
+                    ) : (
+                      <>
+                        <button type="button" className="icon-btn" aria-label={`重命名 ${t}`} onClick={() => { setEditing(t); setEditValue(t); }}><Icon name="edit" size={16} /></button>
+                        <button type="button" className="icon-btn danger" aria-label={`删除 ${t}`} onClick={() => setConfirm({ type: 'tag', name: t })}><Icon name="trash" size={16} /></button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <div className="row add-row">
+          <input
+            className="text-input"
+            placeholder="新标签，比如「路过的店」"
+            value={newTag}
+            maxLength={12}
+            onChange={(e) => setNewTag(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') submitTag(); }}
+          />
+          <button type="button" className="btn primary" onClick={submitTag}><Icon name="plus" size={18} />添加</button>
+        </div>
+        <button type="button" className="btn ghost full" disabled={busy} onClick={suggest}>
+          <Icon name="refresh" size={18} />{busy ? '建议中…' : '根据历史记录自动建议'}
+        </button>
+        {suggestions.length > 0 && (
+          <div className="suggest-box">
+            <span className="muted small">点一下加进标签库：</span>
+            <div className="chip-group">
+              {suggestions.map((t) => (
+                <button type="button" key={t} className="chip suggest" onClick={() => { addTag(t); setSuggestions((prev) => prev.filter((x) => x !== t)); showToast(`已添加「${t}」`); }}>+ {t}</button>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section className="card">
+        <div className="section-head"><h2>提醒</h2><Icon name="bell" size={20} /></div>
+        <p className="notice-status">浏览器通知：{PERM_LABEL[perm] || perm}</p>
+        <p className="hint">通知只在页面打开时生效；到期列表高亮不依赖通知权限。</p>
+        {perm !== 'granted' && <button type="button" className="btn ghost full" onClick={requestNotify}>开启浏览器通知</button>}
+      </section>
+
+      <section className="card">
+        <div className="section-head"><h2>数据</h2><Icon name="file" size={20} /></div>
+        <p className="hint">全部记录只存在这台设备的浏览器里（IndexedDB，回退 localStorage）。时区固定 Asia/Shanghai。</p>
+        <div className="actions">
+          <button type="button" className="btn primary" onClick={exportJSON}><Icon name="download" size={18} />导出 JSON</button>
+          <button type="button" className="btn ghost danger-outline" onClick={() => setConfirm({ type: 'clear' })}><Icon name="trash" size={18} />清空记录</button>
+        </div>
+      </section>
+
+      <section className="card about-card">
+        <div className="section-head"><h2>关于</h2><span className="muted small">v0.1.0 · 2 天 Demo</span></div>
+        <p className="hint">「臭脑子」只是壳，不表示系统会默认嘲讽你。默认语气是温和，想换随时在「我的」里改。</p>
+        <p className="hint">AI 加工由服务端代理调用 DeepSeek（deepseek-flash）。API Key 只存在服务端环境变量里，前端不含任何密钥。语音 ASR、地图 POI、餐厅推荐、社区与登录中台均不在本次范围。</p>
+        <div className="about-row"><Icon name="shield" size={18} /><span>本地优先 · 不上传原始记录到第三方数据库</span></div>
+      </section>
+
+      <ConfirmDialog
+        open={!!confirm}
+        title={confirm?.type === 'clear' ? '清空全部记录？' : '删除这个标签？'}
+        message={confirm?.type === 'clear'
+          ? '将删除本机全部随手记、加工结果和今日打卡，语气与标签设置会保留。建议先导出 JSON 备份。'
+          : `「${confirm?.name || ''}」会从标签库和所有记录上移除。`}
+        confirmText={confirm?.type === 'clear' ? '确认清空' : '删除'}
+        onCancel={() => setConfirm(null)}
+        onConfirm={() => {
+          if (confirm?.type === 'clear') { clearRecords(); showToast('记录已清空，设置已保留'); }
+          else { removeTag(confirm.name); showToast('标签已删除'); }
+          setConfirm(null);
+        }}
+      />
+    </div>
+  );
+}

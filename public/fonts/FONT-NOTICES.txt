@@ -1,0 +1,12 @@
+当前 Demo 手写字体：小赖字体 SC / Xiaolai SC。
+作者项目：https://github.com/lxgw/kose-font
+授权：SIL Open Font License 1.1，全文见同目录 OFL.txt。
+Web 子集来源：@chinese-fonts/xiaolai@3.0.0。
+保留了 CSS 中的字体版权元数据，未修改字体字形；浏览器按字符范围加载 WOFF2 文件。
+
+用户指定字体：小熊布丁的假期 Regular。
+来源：https://www.fonts.net.cn/font-45833444000.html
+该站下载页需要登录和下载服务费，页面标注非商免，当前未下载或内置此字体。
+若本机已安装此字体，Chounaozi Requested 字体族会优先尝试使用其本机名称。
+后续取得许可和字体文件后，可在 experience.css 的 Chounaozi Requested 中增加本地文件 URL。
+不得把当前小赖字体预览称为已接入小熊布丁原字体。

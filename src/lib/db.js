@@ -6,8 +6,10 @@
 const DB_NAME = 'chounaozi-db';
 const STORE = 'records';
 const LS_KEY = 'chounaozi.records.v1';
+const FALLBACK_KEY = 'chounaozi.records.fallback';
 
 let dbPromise = null;
+let writeQueue = Promise.resolve();
 
 function hasIDB() {
   return typeof window !== 'undefined' && typeof window.indexedDB !== 'undefined';
@@ -45,6 +47,11 @@ function lsWrite(records) {
 }
 
 export async function loadRecords() {
+  try {
+    if (window.localStorage.getItem(FALLBACK_KEY) === 'true') return lsRead();
+  } catch {
+    /* localStorage 不可用时继续尝试 IndexedDB */
+  }
   if (hasIDB()) {
     try {
       const db = await openDB();
@@ -65,7 +72,7 @@ export async function loadRecords() {
   return lsRead();
 }
 
-export async function replaceRecords(records) {
+async function writeRecords(records) {
   const list = Array.isArray(records) ? records : [];
   if (hasIDB()) {
     try {
@@ -79,10 +86,23 @@ export async function replaceRecords(records) {
         tx.onerror = () => reject(tx.error);
         tx.onabort = () => reject(tx.error);
       });
+      try {
+        window.localStorage.removeItem(LS_KEY);
+        window.localStorage.removeItem(FALLBACK_KEY);
+      } catch {
+        /* IndexedDB 保存已完成 */
+      }
       return;
     } catch {
       // 落到 localStorage
     }
   }
   lsWrite(list);
+  window.localStorage.setItem(FALLBACK_KEY, 'true');
+}
+
+export function replaceRecords(records) {
+  const write = writeQueue.then(() => writeRecords(records));
+  writeQueue = write.catch(() => {});
+  return write;
 }

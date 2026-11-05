@@ -1,126 +1,215 @@
 import React, { useMemo, useState } from 'react';
 import { useStore } from '../lib/store.jsx';
-import { calendarMatrix, dayLabel, monthTitle, shiftMonth, todayKey, timeLabel } from '../lib/time.js';
-import { clip } from '../lib/utils.js';
+import {
+  calendarMatrix,
+  dayLabel,
+  shiftMonth,
+  todayKey,
+  weekForDate,
+  shiftDateKey,
+} from '../lib/time.js';
+import { recordMatches } from '../lib/records.js';
+import RecordRow from '../components/RecordRow.jsx';
+import TagFilter from '../components/TagFilter.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import Icon from '../components/Icons.jsx';
 
 const WEEK = ['一', '二', '三', '四', '五', '六', '日'];
-
-export default function CalendarTab() {
-  const { records, settings, setTab, setSelectedId } = useStore();
-  const [cursor, setCursor] = useState(() => {
-    const [y, m] = todayKey().split('-').map(Number);
-    return { year: y, month: m };
-  });
+export default function CalendarTab({ query = '' }) {
+  const { records, setComposerOpen, settings, updateSettings } = useStore();
   const [selected, setSelected] = useState(todayKey());
-  const [filter, setFilter] = useState('全部');
-
-  const filtered = useMemo(
-    () => (filter === '全部' ? records : records.filter((r) => (r.tags || []).includes(filter))),
-    [records, filter],
-  );
-  const countMap = useMemo(() => {
-    const map = {};
-    filtered.forEach((r) => { map[r.dateKey] = (map[r.dateKey] || 0) + 1; });
-    return map;
-  }, [filtered]);
-  const cells = useMemo(() => calendarMatrix(cursor.year, cursor.month), [cursor]);
-  const dayRecords = filtered.filter((r) => r.dateKey === selected);
-  const today = todayKey();
-
-  const goToday = () => {
-    const [y, m] = today.split('-').map(Number);
-    setCursor({ year: y, month: m });
-    setSelected(today);
+  const [mode, setMode] = useState(settings.calendarView || 'week');
+  const changeMode = (value) => {
+    setMode(value);
+    updateSettings({ calendarView: value });
   };
-
+  const [tag, setTag] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(Number(todayKey().slice(0, 4)));
+  const [year, month] = selected.split('-').map(Number);
+  const base = records.filter((r) => recordMatches(r, query));
+  const filtered = base.filter((r) => !tag || r.tags.includes(tag));
+  const counts = new Map();
+  filtered.forEach((r) => counts.set(r.dateKey, (counts.get(r.dateKey) || 0) + 1));
+  const cells = useMemo(
+    () => (mode === 'week' ? weekForDate(selected) : calendarMatrix(year, month)),
+    [mode, selected, year, month],
+  );
+  const dayRecords = filtered.filter((r) => r.dateKey === selected);
+  const navigate = (delta) => {
+    setPickerOpen(false);
+    if (mode === 'week') return setSelected(shiftDateKey(selected, delta * 7));
+    const next = shiftMonth(year, month, delta);
+    const day = Math.min(
+      Number(selected.slice(-2)),
+      new Date(Date.UTC(next.year, next.month, 0)).getUTCDate(),
+    );
+    setSelected(
+      `${next.year}-${String(next.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+    );
+  };
   return (
-    <div className="page">
-      <section className="card">
-        <div className="calendar-head">
-          <div>
-            <h2>{monthTitle(cursor.year, cursor.month)}</h2>
-            <span className="muted small">按日聚合 · 共 {filtered.length} 条</span>
+    <div className="calendar-page">
+      <section className="calendar-panel" aria-label="记录日历">
+        <div className="calendar-toolbar">
+          <div className="month-picker">
+            <button
+              type="button"
+              className="month-trigger"
+              aria-label="选择月份"
+              aria-expanded={pickerOpen}
+              onClick={() => {
+                setPickerYear(year);
+                setPickerOpen(!pickerOpen);
+              }}
+            >
+              {year}年{month}月 <span aria-hidden="true">⌄</span>
+            </button>
+            {pickerOpen && (
+              <div
+                className="month-menu"
+                role="group"
+                aria-label="月份选择"
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') setPickerOpen(false);
+                }}
+              >
+                <label>
+                  年份
+                  <select
+                    aria-label="年份"
+                    value={pickerYear}
+                    onChange={(event) => setPickerYear(Number(event.target.value))}
+                  >
+                    {[
+                      ...new Set([
+                        ...Array.from(
+                          { length: 26 },
+                          (_, i) => Number(todayKey().slice(0, 4)) - 20 + i,
+                        ),
+                        year,
+                        ...records.map((r) => Number(r.dateKey.slice(0, 4))),
+                      ]),
+                    ]
+                      .sort((a, b) => a - b)
+                      .map((value) => (
+                        <option key={value} value={value}>
+                          {value}年
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                <div>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((value) => (
+                    <button
+                      type="button"
+                      key={value}
+                      aria-label={`${pickerYear}年${value}月`}
+                      className={pickerYear === year && value === month ? 'active' : ''}
+                      onClick={() => {
+                        setSelected(`${pickerYear}-${String(value).padStart(2, '0')}-01`);
+                        setPickerOpen(false);
+                      }}
+                    >
+                      {value}月
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          <div className="cal-nav">
-            <button type="button" className="icon-btn" aria-label="上个月" onClick={() => setCursor((c) => shiftMonth(c.year, c.month, -1))}><Icon name="chevronLeft" size={20} /></button>
-            <button type="button" className="btn tiny" onClick={goToday}>今天</button>
-            <button type="button" className="icon-btn" aria-label="下个月" onClick={() => setCursor((c) => shiftMonth(c.year, c.month, 1))}><Icon name="chevronRight" size={20} /></button>
+          <div className="calendar-controls">
+            <button
+              type="button"
+              className="icon-btn"
+              aria-label={mode === 'month' ? '上个月' : '上一周'}
+              onClick={() => navigate(-1)}
+            >
+              <Icon name="chevronLeft" size={18} />
+            </button>
+            <div className="calendar-mode" role="group" aria-label="日历视图">
+              <button
+                type="button"
+                aria-pressed={mode === 'month'}
+                className={mode === 'month' ? 'active' : ''}
+                onClick={() => changeMode('month')}
+              >
+                月
+              </button>
+              <button
+                type="button"
+                aria-pressed={mode === 'week'}
+                className={mode === 'week' ? 'active' : ''}
+                onClick={() => changeMode('week')}
+              >
+                周
+              </button>
+            </div>
+            <button
+              type="button"
+              className="icon-btn"
+              aria-label={mode === 'month' ? '下个月' : '下一周'}
+              onClick={() => navigate(1)}
+            >
+              <Icon name="chevronRight" size={18} />
+            </button>
           </div>
         </div>
-        <div className="week-row">{WEEK.map((w) => <span key={w}>{w}</span>)}</div>
-        <div className="day-grid">
+        <div className="week-row">
+          {WEEK.map((w) => (
+            <span key={w}>{w}</span>
+          ))}
+        </div>
+        <div className={`day-grid ${mode === 'week' ? 'week-view' : ''}`}>
           {cells.map((cell) => (
             <button
               type="button"
               key={cell.key}
-              className={`day-cell ${cell.inMonth ? '' : 'out'} ${selected === cell.key ? 'selected' : ''} ${cell.key === today ? 'today' : ''}`}
+              className={`day-cell ${cell.inMonth ? '' : 'out'} ${selected === cell.key ? 'selected' : ''} ${cell.key === todayKey() ? 'today' : ''}`}
+              aria-label={`${cell.key}，${counts.get(cell.key) || 0} 条记录`}
+              aria-pressed={selected === cell.key}
               onClick={() => {
                 setSelected(cell.key);
-                if (!cell.inMonth) {
-                  const [y, m] = cell.key.split('-').map(Number);
-                  setCursor({ year: y, month: m });
-                }
+                setPickerOpen(false);
               }}
             >
               <span>{cell.day}</span>
-              {countMap[cell.key] > 0 && <span className="day-dot">{countMap[cell.key]}</span>}
+              <i className={counts.get(cell.key) ? 'has-records' : ''} />
             </button>
           ))}
         </div>
       </section>
-
-      <section className="card">
-        <div className="section-head"><h2>按气味标签筛选</h2></div>
-        <div className="chip-group">
-          {['全部', ...settings.tags].map((t) => (
-            <button type="button" key={t} className={`chip chip-sm ${filter === t ? 'active' : ''}`} onClick={() => setFilter(t)}>{t}</button>
-          ))}
-        </div>
-      </section>
-
-      <section className="list-section">
+      <TagFilter records={base} value={tag} onChange={setTag} />
+      <section className="calendar-entries">
         <div className="section-head">
-          <h2>{dayLabel(selected)}</h2>
-          <span className="muted small">{dayRecords.length} 条</span>
+          <h2>
+            {dayLabel(selected)}
+            <small>{dayRecords.length} 条</small>
+          </h2>
+          <div className="calendar-entry-actions">
+            <button type="button" className="today-link" onClick={() => setSelected(todayKey())}>
+              回到今天
+            </button>
+            <button
+              type="button"
+              className="calendar-add"
+              aria-label="记一笔"
+              onClick={() => setComposerOpen(true)}
+            >
+              <Icon name="plus" size={20} />
+            </button>
+          </div>
         </div>
-        {dayRecords.length === 0 ? (
-          <EmptyState
-            icon="calendar"
-            title={records.length === 0 ? '还没有记录' : filter === '全部' ? '这天没有记录' : '这天没有这个标签的记录'}
-            desc={records.length === 0 ? '去「记一下」写第一条，日历会自动按天聚合。' : '换个日期或切换筛选条件看看。'}
-            actionText={records.length === 0 ? '去记一条' : ''}
-            onAction={records.length === 0 ? () => setTab('record') : undefined}
-          />
-        ) : (
-          <div className="record-list">
+        {dayRecords.length ? (
+          <div className="entry-list">
             {dayRecords.map((r) => (
-              <div className="record-card" key={r.id} onClick={() => { setSelectedId(r.id); setTab('studio'); }} role="button" tabIndex={0}>
-                <div className="record-top">
-                  <span className="time">{timeLabel(r.createdAt)}</span>
-                  <span className="pill">{r.tone}</span>
-                  <span className="pill alt">{r.direction}</span>
-                </div>
-                {r.photoDataUrl && <img className="thumb" src={r.photoDataUrl} alt="记录照片" />}
-                <p className="record-text">{clip(r.text || '（只有一张照片）', 80)}</p>
-                <div className="record-bottom">
-                  {(r.tags || []).map((t) => <span className="tag" key={t}>{t}</span>)}
-                  <span className="muted small">{(r.outputs || []).length} 条加工</span>
-                </div>
-              </div>
+              <RecordRow key={r.id} record={r} />
             ))}
           </div>
+        ) : (
+          <EmptyState icon="calendar" title="这天还没有相关记录" desc="换个日期，或用标签找找。" />
         )}
       </section>
-
-      <div className="placeholder-card">
-        <div>
-          <strong>年度报告</strong>
-          <p>放进 V1.0，本次 Demo 不做完整版</p>
-        </div>
-        <span className="placeholder-badge">V1.0 规划</span>
-      </div>
     </div>
   );
 }

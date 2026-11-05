@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/prepare-fonts.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/prepare-fonts.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "prestart": "npm run build",
@@ -12,6 +14,7 @@
     "serve": "node server/preview.mjs"
   },
   "dependencies": {
+    "@chinese-fonts/xiaolai": "3.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

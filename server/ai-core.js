@@ -6,12 +6,14 @@
  */
 export const DEFAULT_MODEL = 'deepseek-flash';
 const BASE_URL = 'https://api.deepseek.com';
-const VALID_ACTIONS = new Set(['extend', 'caption', 'poster', 'suggestTags']);
+const VALID_ACTIONS = new Set(['rewrite', 'extend', 'caption', 'poster', 'suggestTags']);
 
 const TONE_GUIDE = {
   温和: '友善、平实、带一点鼓励，不夸张',
   犀利: '直截了当、抓关键，但不刻薄、不人身攻击',
   幽默: '轻快俏皮，仍然尊重用户',
+  搞笑: '轻松好笑，有具体包袱和生活里的反差，像朋友间的俏皮吐槽，不用网络烂梗堆砌',
+  腹黑: '表面客气、内心有戏，带一点机灵的反讽；吐槽事情，不攻击用户或他人身份，不恶意羞辱',
   文艺: '有画面感、克制、略带诗意',
   极简: '短句、少修饰、信息密度高',
 };
@@ -21,20 +23,18 @@ const DIRECTION_GUIDE = {
 };
 
 const TAG_RULES = [
-  ['馋了', /(吃|饭|餐|咖啡|奶茶|面|辣|甜|味道|外卖|厨|烘焙|水果|喝)/],
-  ['走过的', /(走|路|街|地铁|公交|公园|旅|逛|店|散步|街角|车)/],
-  ['想太多', /(想|如果|万一|焦虑|纠结|梦|担心|是不是|要不要)/],
-  ['工作脑', /(需求|会议|上线|方案|产品|代码|评审|汇报|客户|项目|加班|bug)/i],
-  ['小确幸', /(开心|舒服|喜欢|天气|阳光|猫|花|笑|礼物|周末|睡)/],
-  ['新点子', /(点子|想法|试试|做一个|搞一个|灵感|idea)/i],
-  ['没头绪', /(不知道|随便|发呆|说不清|啊|嗯)/],
+  ['吃喝探店', /(吃|饭|餐|咖啡|奶茶|面|辣|甜|味道|外卖|厨|烘焙|水果|喝)/],
+  ['旅行散步', /(街|地铁|公交|公园|旅|逛|散步|街角)/],
+  ['情绪心事', /(焦虑|纠结|担心|难过|情绪|失落|委屈)/],
+  ['职场吐槽', /(会议|评审|汇报|客户|加班|老板|同事|打工)/],
+  ['生活小事', /(开心|舒服|喜欢|天气|阳光|猫|花|笑|礼物|周末|睡)/],
+  ['产品灵感', /(需求|上线|方案|产品|代码|项目|bug|点子|想法|做一个|灵感|idea)/i],
 ];
 
 export function suggestByRules(texts, existing = []) {
   const blob = (texts || []).join('\n').slice(0, 4000);
   const hit = TAG_RULES.filter(([tag, re]) => re.test(blob) && !existing.includes(tag)).map(([tag]) => tag);
-  const spare = ['日常', '碎片', '值得记'].filter((t) => !existing.includes(t));
-  return [...hit, ...spare].slice(0, 5);
+  return hit.slice(0, 5);
 }
 
 function str(v, fallback = '') {
@@ -64,33 +64,46 @@ function buildSpec(action, p) {
     `本次推演方向：${direction} —— ${DIRECTION_GUIDE[direction] || `取向为「${direction}」`}。方向只决定这一次生成，不是用户的长期标签。`,
   ].join('\n');
   const text = str(p.text || p.note, '').slice(0, 1200);
+  const context = [
+    str(p.selectedText) && `用户上次选中的版本：${str(p.selectedText).slice(0, 500)}`,
+    str(p.question) && `用户还想弄清楚：${str(p.question).slice(0, 200)}`,
+    Array.isArray(p.notes) && p.notes.length && `用户后来的补记：\n${p.notes.slice(-10).map((note) => str(note).slice(0, 400)).join('\n')}`,
+  ].filter(Boolean).join('\n').slice(0, 2500);
+  const sourceText = `${text || '（用户只留了照片）'}${context ? `\n\n以下是同一条记录的后续材料，请结合新增事实继续加工，不重复已经被修正的建议。\n${context}` : ''}`;
   const image = typeof p.photoDataUrl === 'string' && p.photoDataUrl.startsWith('data:image/') ? p.photoDataUrl : null;
 
+  if (action === 'rewrite') {
+    return {
+      system: `${common}\n任务：根据原文写 3 条不同的表达，忠于原事件和用户补记，不捏造事实。按用户选的语气写出鲜明差别，每条 15~70 字。适合私人生活记录，能让用户觉得有趣、想留下。不要给行动建议，不编号、不解释。只输出 json：{"items":["表达一","表达二","表达三"]}。`,
+      user: `原始记录：${sourceText}`,
+      image: null,
+    };
+  }
   if (action === 'extend') {
     return {
       system: `${common}\n任务：把这条随手记延展成 3~5 条彼此不同的想法或下一步。每条 20~60 字，不编号、不解释、不加开场白。\n只输出 json，格式示例：{"items":["第一条","第二条","第三条"]}。`,
-      user: `随手记：${text || '（用户只留了一笔空白）'}`,
+      user: `随手记：${sourceText}`,
       image: null,
     };
   }
   if (action === 'caption') {
     return {
-      system: `${common}\n任务：为这张照片写 2~3 条配文，像明信片背面的一句话，每条不超过 30 字，不编号、不解释。\n只输出 json，格式示例：{"items":["第一条","第二条"]}。`,
-      user: `照片备注：${text || '（无备注，请看照片）'}`,
+      system: `${common}\n任务：为${image ? '这张照片' : '这条生活记录'}写 2~3 条配文，像明信片背面的一句话，每条不超过 30 字，不编号、不解释。\n只输出 json，格式示例：{"items":["第一条","第二条"]}。`,
+      user: `记录素材：${sourceText}`,
       image,
     };
   }
   if (action === 'poster') {
     return {
-      system: `${common}\n任务：把这条记录写成「今日最臭」打卡海报文案。主标题 4~10 字，副文案 15~40 字，落款一句不超过 14 字；有记忆点、轻松，不嘲讽用户。\n只输出 json，格式示例：{"title":"主标题","body":"副文案","footer":"落款"}。`,
-      user: `今日选中的记录：${text || '（一张照片，没有文字）'}`,
+      system: `${common}\n任务：把这条记录写成用户愿意留下的封面文案。主标题 4~20 字，副文案 15~40 字，落款一句不超过 14 字；贴合具体素材与用户选择的语气，不嘲讽用户。\n只输出 json，格式示例：{"title":"主标题","body":"副文案","footer":"落款"}。`,
+      user: `今日选中的记录：${sourceText}`,
       image: null,
     };
   }
   const existing = Array.isArray(p.existing) ? p.existing.join('、') : '';
   const recent = Array.isArray(p.recent) ? p.recent.slice(0, 15).map((t, i) => `${i + 1}. ${String(t).slice(0, 80)}`).join('\n') : '';
   return {
-    system: '你是「臭脑子」App 的标签助理。气味标签是描述一个人长期关注什么的画像标签，2~6 个汉字，名词或名词短语，例如「路过的店」「想太多」。根据近期记录推荐 3~5 个，避开已有标签，不解释、不编号。只输出 json，格式示例：{"tags":["标签一","标签二"]}。',
+    system: '你是「臭脑子」App 的标签助理。标签描述记录的具体主题，2~6 个汉字，例如「产品灵感」「职场吐槽」「吃喝探店」「旅行散步」「情绪心事」。根据近期实际记录推荐 1~5 个，避开已有标签。不要「馋了」「碎片」「值得记」等看不懂或笼统的标签，不用语气当标签，没有合适的新主题可返回空数组。不解释、不编号。只输出 json，格式示例：{"tags":["标签一","标签二"]}。',
     user: `已有标签：${existing || '（无）'}\n近期记录：\n${recent || '（暂无记录）'}`,
     image: null,
   };
@@ -102,6 +115,14 @@ function demoData(action, p) {
   const subject = raw ? (raw.length > 16 ? `${raw.slice(0, 16)}…` : raw) : '这一笔';
   const direction = str(p.direction, '正经好用');
   const tone = str(p.tone, '温和');
+  if (action === 'rewrite') {
+    const versions = {
+      文艺: [`${subject}，是今天没被日历写下的那一行。`, `把「${subject}」收好，留给以后的某个傍晚。`, `日子翻过一页，这一笔还留着。${subject}`],
+      搞笑: [`${subject}。生活有自己的编剧，而且不肯给我看剧本。`, `关于「${subject}」，本人的脑子表示：先存着，明天再开机。`, `今日份剧情：${subject}。主演本人，片酬为零。`],
+      腹黑: [`${subject}。我当然没意见，意见已经自己写成了小作文。`, `关于「${subject}」，表面风平浪静，脑内已经开完三场会。`, `${subject}。挺好的，至少素材又多了一条。`],
+    };
+    return { items: versions[tone] || [`${subject}。先记下来，给今天留一个位置。`, `今天的小事：${subject}。`, `把「${subject}」放在这里，改天再看。`] };
+  }
   if (action === 'extend') {
     const serious = [
       `把「${subject}」拆成三步：先写下动机，再找一个 10 分钟能试的动作，最后约个时间回看。`,
@@ -201,25 +222,24 @@ function parseLoose(text) {
 function normalize(action, parsed, p) {
   const o = parsed && typeof parsed === 'object' ? parsed : {};
   if (action === 'poster') {
-    const d = demoData('poster', p);
+    const title = str(o.title) || str(o.主标题);
+    if (!title) throw new Error('模型没有返回可用标题');
     return {
-      title: str(o.title) || str(o.主标题) || d.title,
-      body: str(o.body) || str(o.subtitle) || str(o.副文案) || d.body,
-      footer: str(o.footer) || str(o.落款) || d.footer,
+      title,
+      body: str(o.body) || str(o.subtitle) || str(o.副文案),
+      footer: str(o.footer) || str(o.落款),
     };
   }
   if (action === 'suggestTags') {
     const tags = arr(o.tags || o.items || o.labels).slice(0, 6);
-    return { tags: tags.length ? tags : demoData('suggestTags', p).tags };
+    if (!tags.length && !Array.isArray(o.tags)) throw new Error('模型没有返回可用标签');
+    return { tags };
   }
   let items = arr(o.items || o.list || o.results || o.文案)
     .map((x) => x.replace(/^["「]+|["」]+$/g, ''))
     .filter(Boolean);
   items = items.slice(0, action === 'extend' ? 5 : 3);
-  if (action === 'extend' && items.length < 3) {
-    items = items.concat(demoData(action, p).items.filter((x) => !items.includes(x))).slice(0, 5);
-  }
-  if (!items.length) items = demoData(action, p).items;
+  if (!items.length) throw new Error('模型没有返回可用内容');
   return { items };
 }
 
@@ -261,11 +281,17 @@ export async function runAI(input, env = {}) {
   if (!content) return demo(lastErr || '模型返回空白内容');
 
   const parsed = parseLoose(content);
+  let data;
+  try {
+    data = normalize(action, parsed, p);
+  } catch {
+    return { ok: false, error: '这次没有生成可用内容，原文已留着，可以重试' };
+  }
   return {
     ok: true,
     source: 'deepseek',
     model,
-    data: normalize(action, parsed, p),
+    data,
     ...(parsed ? {} : { degraded: true, reason: '模型输出非结构化，已按行解析' }),
   };
 }

@@ -9,3 +9,5 @@ dist/
 npm-debug.log*
 *.genie
 .workbuddy/
+# Generated from the locked @chinese-fonts/xiaolai package before dev/build.
+public/fonts/xiaolai/

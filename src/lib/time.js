@@ -96,6 +96,20 @@ export function shiftMonth(year, month, delta) {
   return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1 };
 }
 
+export function shiftDateKey(key, days) {
+  const [year, month, day] = key.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+}
+
+export function weekForDate(key) {
+  const [year, month, day] = key.split('-').map(Number);
+  const weekday = (new Date(Date.UTC(year, month - 1, day)).getUTCDay() + 6) % 7;
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = shiftDateKey(key, index - weekday);
+    return { key: date, day: Number(date.slice(-2)), inMonth: date.slice(0, 7) === key.slice(0, 7) };
+  });
+}
+
 /** 周一开头的月历格子，只返回实际需要的整周行数 */
 export function calendarMatrix(year, month) {
   const first = new Date(Date.UTC(year, month - 1, 1));

@@ -4,13 +4,29 @@
 
 > 「臭脑子」只是产品壳，**不表示系统默认嘲讽用户**。默认语气是「温和」，用户随时可改。
 
-## 在线预览
+## 线上地址
 
-**分享链接**：https://chounaozi-notes.app.workbuddy.host/?sharecode=QFG2KJ22VF
+| 环境 | 地址 | 说明 |
+| --- | --- | --- |
+| 正式（Vercel） | https://scabbyhead1105vercal.vercel.app | 从 GitHub 仓库导入部署；需在 Vercel 配置 `DEEPSEEK_API_KEY` 才会走真实模型 |
+| 开发预览（单端口 Node） | https://chounaozi-notes.app.workbuddy.host/?sharecode=QFG2KJ22VF | 工作区发布的预览，**不是 Vercel**；未注入 Key，页面显示「演示模式」 |
 
-这是当前工作区发布的可访问预览（单端口 Node 服务，**不是 Vercel**）。线上预览沙箱未注入 DeepSeek Key，因此页面顶部会显示「演示模式」，由服务端返回兜底文案；录入、延展、配文、明信片、提醒、日历筛选、今日最臭海报、标签 CRUD 全部可点通。
+> Vercel 地址由用户提供，项目名含 `vercal` 拼写；如 Vercel 面板显示的实际域名不同，以面板为准。
 
-本机 `.env.local` 已填入 Key，`npm run dev` / `npm start` 会直接调用真实 `deepseek-flash`（`source: "deepseek"`）。想让线上预览也用真实模型，需要重新发布一次并把 Key 作为服务端环境变量带上；正式 Vercel 部署则在 Project Settings → Environment Variables 配置，步骤见「部署到 Vercel」。
+预览环境未注入 Key 时由服务端返回兜底文案，录入、延展、配文、明信片、提醒、日历筛选、今日最臭海报、标签 CRUD 仍可完整点通。本机 `.env.local` 已填入 Key，`npm run dev` / `npm start` 会直接调用真实 `deepseek-flash`（`source: "deepseek"`）。
+
+### 如何确认正式站已用上真实模型
+
+1. 浏览器打开正式地址，页面顶部**不应**出现「演示模式」标记。
+2. 或直接请求接口，看返回的 `source` 字段：
+   ```bash
+   curl -sS -X POST https://scabbyhead1105vercal.vercel.app/api/ai \
+     -H 'Content-Type: application/json' \
+     -d '{"action":"extend","payload":{"text":"线上自检","tone":"温和","direction":"正经好用"}}'
+   ```
+   `source: "deepseek"` = 已用真实模型；`source: "demo"` = 未配置 Key 或改完环境变量没重新部署。
+3. 若返回 `demo`：Vercel → **Project Settings → Environment Variables** 添加 `DEEPSEEK_API_KEY`（勾选 Production / Preview）→ **Deployments → Redeploy**。环境变量变更不会自动作用于已有部署。
+4. 前端产物自查：下载页面引用的 `assets/*.js`，`grep` 不应出现 `DEEPSEEK_API_KEY` 或 `api.deepseek.com`。
 
 ## 范围（已拍板，不再扩展）
 
@@ -107,7 +123,7 @@ npm start                      # http://localhost:3000，监听 0.0.0.0:$PORT
 3. **Project Settings → Environment Variables** 新增：
    - `DEEPSEEK_API_KEY` = 你的 DeepSeek Key（Production / Preview 按需勾选）
    - `DEEPSEEK_MODEL` = `deepseek-flash`（可选，不填即用默认值）
-4. Deploy。部署完成后 Vercel 给出的 `https://<project>.vercel.app` 即为线上地址。
+4. Deploy。部署完成后 Vercel 给出的 `https://<project>.vercel.app` 即为线上地址（本项目当前地址见「线上地址」章节）。改完环境变量记得 **Redeploy**。
 5. 想用 CLI：`npm i -g vercel && vercel --prod`，Key 同样通过 `vercel env add DEEPSEEK_API_KEY` 写入。
 
 > Key 只在 `api/ai.js` 里通过 `process.env` 读取，不会进入 `dist/`。可用 `grep -R "DEEPSEEK_API_KEY" dist/` 自查（应无结果）。

@@ -11,7 +11,8 @@
 | 正式（Vercel） | https://scabbyhead1105vercal.vercel.app | 从 GitHub 仓库导入部署；需在 Vercel 配置 `DEEPSEEK_API_KEY` 才会走真实模型 |
 | 开发预览（单端口 Node） | https://chounaozi-notes.app.workbuddy.host/?sharecode=QFG2KJ22VF | 工作区发布的预览，**不是 Vercel**；未注入 Key，页面显示「演示模式」 |
 
-> Vercel 地址由用户提供，项目名含 `vercal` 拼写；如 Vercel 面板显示的实际域名不同，以面板为准。
+> ✅ 已在 Vercel 面板核实：域名就是 `scabbyhead1105vercal.vercel.app`，且项目**已连接 GitHub 仓库**——向 `main` 推送提交会自动触发生产部署（该地址对应的部署来源即为提交 `22da1a0`，状态「准备好」）。
+> 注意：**连接 Git 只同步代码，不会同步环境变量**。`.env.local` 被 `.gitignore` 排除、本来就不在仓库里，DeepSeek Key 必须在 Vercel「环境变量」中单独配置，配置后还需 Redeploy。
 
 预览环境未注入 Key 时由服务端返回兜底文案，录入、延展、配文、明信片、提醒、日历筛选、今日最臭海报、标签 CRUD 仍可完整点通。本机 `.env.local` 已填入 Key，`npm run dev` / `npm start` 会直接调用真实 `deepseek-flash`（`source: "deepseek"`）。
 

@@ -3,7 +3,7 @@ import { useStore } from '../lib/store.jsx';
 import { DIRECTIONS, DIRECTION_HINT } from '../lib/constants.js';
 import { selectedOutput } from '../lib/records.js';
 import TonePicker from '../components/TonePicker.jsx';
-import { copyText, uid } from '../lib/utils.js';
+import { copyText } from '../lib/utils.js';
 import { dateTimeLabel } from '../lib/time.js';
 import ChipGroup from '../components/ChipGroup.jsx';
 import CoverEditor from '../components/CoverEditor.jsx';
@@ -15,7 +15,6 @@ export default function StudioTab({ record, onClose }) {
   const [tone, setTone] = useState(record.tone || settings.defaultTone);
   const [direction, setDirection] = useState(record.direction || settings.defaultDirection);
   const [question, setQuestion] = useState(record.continuationQuestion);
-  const [note, setNote] = useState('');
   const [view, setView] = useState('detail');
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [error, setError] = useState('');
@@ -38,15 +37,6 @@ export default function StudioTab({ record, onClose }) {
     });
     setError('');
     showToast('已收进「再思」，下次从这里继续');
-  };
-
-  const addNote = (event) => {
-    event.preventDefault();
-    if (!note.trim()) return;
-    const savedNote = { id: uid('n'), text: note.trim(), createdAt: new Date().toISOString() };
-    updateRecord(record.id, (latest) => ({ notes: [...latest.notes, savedNote] }));
-    setNote('');
-    showToast('补记已接在原记录后，下次加工会一起参考');
   };
 
   if (view === 'cover')
@@ -150,12 +140,6 @@ export default function StudioTab({ record, onClose }) {
         )}
         {record.outputs.length === 0 && !busy && (
           <p className="quiet-note">先存着也很好，有空再来加工。</p>
-        )}
-        {record.notes.length > 0 && (
-          <p className="context-hint">
-            <Icon name="check" size={13} />
-            下次加工会参考原文、选中版本和 {record.notes.length} 条补记。
-          </p>
         )}
         <div className="output-list" aria-live="polite">
           {visibleOutputs.map((output) => (
@@ -274,44 +258,6 @@ export default function StudioTab({ record, onClose }) {
             </button>
           )}
         </div>
-      </section>
-      <section className="detail-section">
-        <div className="section-head">
-          <h3>
-            <Icon name="edit" size={17} />
-            后来又想到
-          </h3>
-          <span className="muted small">{record.notes.length} 条补记</span>
-        </div>
-        {record.notes.length ? (
-          <div className="note-timeline">
-            {record.notes.map((item) => (
-              <div className="note-entry" key={item.id}>
-                <time>{dateTimeLabel(item.createdAt)}</time>
-                <p>{item.text}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="hint">新发现、改主意，都可以接在这里。</p>
-        )}
-        <form onSubmit={addNote}>
-          <label className="sr-only" htmlFor="follow-up-note">
-            补记
-          </label>
-          <textarea
-            id="follow-up-note"
-            className="text-input"
-            value={note}
-            onChange={(event) => setNote(event.target.value)}
-            maxLength={1000}
-            rows={3}
-            placeholder="我现在觉得…"
-          />
-          <button type="submit" className="btn ghost full" disabled={!note.trim()}>
-            补一句 <Icon name="plus" size={16} />
-          </button>
-        </form>
       </section>
       <section className="detail-section">
         <div className="section-head">

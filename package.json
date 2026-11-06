@@ -8,6 +8,7 @@
     "dev": "vite",
     "prebuild": "node scripts/prepare-fonts.mjs",
     "build": "vite build",
+    "test": "node --test tests/*.test.mjs",
     "preview": "vite preview",
     "prestart": "npm run build",
     "start": "node server/preview.mjs",

@@ -24,7 +24,7 @@ export const LIBRARY_SECTIONS = [
     id: 'covers',
     name: '图片',
     english: 'IMAGES',
-    description: '随手拍与文字封面',
+    description: '随手拍与风格图片',
     icon: 'image',
     color: 'orange',
     match: (r) => Boolean(r.cover || r.photoDataUrl),

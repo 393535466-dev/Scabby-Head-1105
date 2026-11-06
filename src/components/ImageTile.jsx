@@ -12,7 +12,9 @@ export default function ImageTile({ record }) {
       aria-label={`打开记录 ${clip(record.text || record.cover?.title, 35)}`}
       onClick={() => setSelectedId(record.id)}
     >
-      {record.photoDataUrl ? (
+      {record.cover?.imageDataUrl ? (
+        <img src={record.cover.imageDataUrl} alt={record.cover.tone + '风格生成的图片'} loading="lazy" />
+      ) : record.photoDataUrl ? (
         <img src={record.photoDataUrl} alt="记录照片" loading="lazy" />
       ) : (
         <span className="image-cover-preview">
@@ -24,7 +26,7 @@ export default function ImageTile({ record }) {
       <span className="image-tile-text">{clip(record.text || record.cover?.title, 34)}</span>
       <span className="image-tile-time">
         {timeLabel(record.createdAt)}
-        {record.cover ? ' · 封面' : ''}
+        {record.cover?.imageDataUrl ? ' · ' + record.cover.tone : record.cover ? ' · 旧封面' : ''}
         {record.isExample ? ' · 示例' : ''}
       </span>
     </button>

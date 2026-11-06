@@ -8,13 +8,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runAI } from './ai-core.js';
+import { generateImage, imageConfiguration } from './image-core.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dist = path.join(root, 'dist');
 const PORT = Number(process.env.PORT) || 3000;
 
 /**
- * 本地 .env.local 兜底加载：只读取 DEEPSEEK_* 键，且进程环境变量优先。
+ * 本地 .env.local 兜底加载：只读取 DEEPSEEK_* / DASHSCOPE_* 键，且进程环境变量优先。
  * 生产环境（Vercel Function / 托管平台）由平台注入 process.env，不依赖此文件。
  * 该文件仅存在于服务端，dist/ 静态托管目录取不到它。
  */
@@ -22,7 +23,7 @@ function loadLocalEnv() {
   const file = path.join(root, '.env.local');
   if (!fs.existsSync(file)) return;
   for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
-    const m = /^\s*(DEEPSEEK_[A-Z0-9_]+)\s*=\s*(.*)\s*$/.exec(line);
+    const m = /^\s*((?:DEEPSEEK|DASHSCOPE)_[A-Z0-9_]+)\s*=\s*(.*)\s*$/.exec(line);
     if (!m) continue;
     const key = m[1];
     const value = m[2].trim().replace(/^['"]|['"]$/g, '');
@@ -72,6 +73,17 @@ function json(res, status, obj) {
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || '/', 'http://localhost');
+
+  if (url.pathname === '/api/image') {
+    res.setHeader('Cache-Control', 'no-store');
+    if (req.method === 'GET') return json(res, 200, { ok: true, ...imageConfiguration() });
+    if (req.method !== 'POST') return json(res, 405, { ok: false, error: '仅支持 GET 和 POST' });
+    try {
+      return json(res, 200, await generateImage(JSON.parse((await readBody(req)) || '{}')));
+    } catch (error) {
+      return json(res, error.status || 502, { ok: false, code: error.code, error: error.message });
+    }
+  }
 
   if (url.pathname === '/api/ai') {
     if (req.method !== 'POST') return json(res, 405, { ok: false, error: '仅支持 POST' });

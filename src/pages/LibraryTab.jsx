@@ -83,7 +83,7 @@ export default function LibraryTab({ query = '' }) {
               selected?.id === 'pending'
                 ? '打开记录，留下一个想继续的问题。'
                 : selected?.id === 'covers'
-                  ? '记一笔时加照片，也可以把喜欢的一句话做成封面。'
+                  ? '记一笔时加照片，也可以把喜欢的一句话生成风格图片。'
                   : '记一笔，选个语气，让它换个说法或长出点子。'
             }
           />

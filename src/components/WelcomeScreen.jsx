@@ -1,6 +1,7 @@
 import React from 'react';
 import BrandMark from './BrandMark.jsx';
 import BrandWordmark from './BrandWordmark.jsx';
+import HandDrawnArrow from './HandDrawnArrow.jsx';
 
 export default function WelcomeScreen({ onEnter, creating }) {
   return (
@@ -17,7 +18,7 @@ export default function WelcomeScreen({ onEnter, creating }) {
         </p>
       </div>
       <button type="button" className="launch-enter" onClick={onEnter}>
-        {creating ? '创建我的臭脑子' : '进入臭脑子'} <span aria-hidden="true">↗</span>
+        {creating ? '创建我的臭脑子' : '进入臭脑子'} <HandDrawnArrow />
       </button>
     </main>
   );

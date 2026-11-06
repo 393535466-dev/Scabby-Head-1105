@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { runAI } from './server/ai-core.js';
+import { generateImage, imageConfiguration } from './server/image-core.js';
 
 /**
  * 本地 /api/ai 代理。
@@ -42,10 +43,37 @@ function localApiPlugin(env) {
     name: 'chounaozi-local-api',
     configureServer(server) {
       server.middlewares.use('/api/ai', handler);
+      server.middlewares.use('/api/image', imageHandler(env));
     },
     configurePreviewServer(server) {
       server.middlewares.use('/api/ai', handler);
+      server.middlewares.use('/api/image', imageHandler(env));
     },
+  };
+}
+
+function imageHandler(env) {
+  return (req, res) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
+    if (req.method === 'GET') return res.end(JSON.stringify({ ok: true, ...imageConfiguration(env) }));
+    if (req.method !== 'POST') {
+      res.statusCode = 405;
+      return res.end(JSON.stringify({ ok: false, error: '仅支持 GET 和 POST' }));
+    }
+    let size = 0;
+    const chunks = [];
+    req.on('data', (chunk) => { size += chunk.length; if (size <= 4 * 1024 * 1024) chunks.push(chunk); });
+    req.on('end', async () => {
+      try {
+        if (size > 4 * 1024 * 1024) { res.statusCode = 413; return res.end(JSON.stringify({ ok: false, error: '照片太大了，请换一张再试。' })); }
+        const result = await generateImage(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'), env);
+        res.end(JSON.stringify(result));
+      } catch (error) {
+        res.statusCode = error.status || 502;
+        res.end(JSON.stringify({ ok: false, code: error.code, error: error.message }));
+      }
+    });
   };
 }
 

@@ -262,7 +262,7 @@ export default function MineTab({ onEditProfile }) {
           <Icon name="file" size={20} />
         </div>
         <p className="hint">
-          记录保存在这台设备的浏览器里。主动加工时，相关文字、补记和照片会发送给模型服务。可以导出备份，避免清理浏览器后丢失。
+          记录保存在这台设备的浏览器里。主动加工文字或生成图片时，相关文字和选作参考的照片会发送给相应模型服务。可以导出备份，避免清理浏览器后丢失。
         </p>
         <div className="actions">
           <button type="button" className="btn primary" onClick={exportJSON}>
@@ -283,7 +283,7 @@ export default function MineTab({ onEditProfile }) {
       <section className="card about-card">
         <div className="section-head">
           <h2>关于臭脑子</h2>
-          <span className="muted small">Demo · v0.4</span>
+          <span className="muted small">Demo · v0.8</span>
         </div>
         <p className="hint">
           文艺、搞笑、腹黑，怎么说由你决定。输入文字、照片或语音转写，原文一直保留。

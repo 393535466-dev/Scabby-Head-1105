@@ -124,7 +124,7 @@ export default function RecordTab({ remindersOnly = false, query = '', onEditPro
                   query
                     ? '试试原文、加工内容或标签里的词。'
                     : filter === 'images'
-                      ? '记一笔时加照片，或把喜欢的文字做成封面。'
+                      ? '记一笔时加照片，或把喜欢的文字生成风格图片。'
                       : '想到什么，就先记下来。'
                 }
               />

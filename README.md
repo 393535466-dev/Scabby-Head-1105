@@ -1,6 +1,23 @@
-# 臭脑子 · H5 Demo V0.7
+# 臭脑子 · H5 Demo V0.8
 
-随手记 → 用户选择语气和方向加工 → 选中一个版本 → 留下封面或接着想 → 按时间和分类回看。
+随手记 → 用户选择语气和方向加工 → 选中一个版本 → 生成风格图片或留待再思 → 按时间和分类回看。
+
+### V0.8 风格生图与手机体验
+
+- 欢迎按钮使用手绘弯箭头；创建资料的头像预览和模板去掉圆形底色。
+- 灵感库中英文字号放大 30%；手机表单字号至少 16px，限制页面缩放，并处理 Safari 的页面缩放手势。
+- 「生成图片」替代明信片合成，默认继承选中文案的语气，可选温和、文艺、搞笑、腹黑、犀利、极简。可编辑画面内容、补充要求，或选择参考原照片。
+- 生图使用阿里云百炼 `qwen-image-2.0`，调用实际图像生成/编辑接口。结果立即转为图片数据，随记录存入 IndexedDB，避免服务方的临时图片 URL 失效；支持重试、下载、收进图片库。
+- 未配置生图服务时明确显示暂不可用，不以模板、照片套字或演示文案伪装生图。历史封面数据保留。
+
+#### 开通图片生成
+
+1. 在[阿里云百炼北京地域 API Key 页](https://bailian.console.aliyun.com/cn-beijing/model/settings/api-key)创建密钥。创建账号和服务开通由账号所有者完成，可参照[官方说明](https://help.aliyun.com/zh/model-studio/get-api-key)。
+2. Vercel 项目 → Settings → Environment Variables：增加 `DASHSCOPE_API_KEY`，选择 Production，保存后重新部署。不要将密钥提交到 GitHub 或加上 `VITE_` 前缀。
+3. 本地调试时将同一变量填入 `.env.local`，重启 `npm run dev`。其他地域可设置 `DASHSCOPE_BASE_URL`，需与密钥地域匹配；模型可用 `DASHSCOPE_IMAGE_MODEL` 覆盖。
+4. `GET /api/image` 返回 `configured` 状态；记录详情 → 选一版 → 生成图片 → 选择风格 → 生成 → 收进图片库。一次生成一张，失败不覆盖先前图片。
+
+服务实现依据[千问文生图文档](https://help.aliyun.com/zh/model-studio/qwen-image-api)和[图像编辑文档](https://help.aliyun.com/zh/model-studio/qwen-image-edit-api)。运行 `npm test` 检查风格映射、照片请求、图片下载持久化和失败路径；真实出图需配置有效密钥后另行验证。
 
 ### V0.7.1 底栏与记录详情修正
 

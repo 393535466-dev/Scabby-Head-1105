@@ -82,9 +82,15 @@ export default function StudioTab({ record, onClose }) {
         </span>
         <button type="button" className="link-btn" onClick={() => setView('cover')}>
           <Icon name="image" size={15} />
-          {record.cover ? '看看封面' : '做张封面'}
+          {record.cover?.imageDataUrl ? '查看图片' : '生成图片'}
         </button>
       </div>
+      {record.cover?.imageDataUrl && (
+        <button type="button" className="generated-record-image" onClick={() => setView('cover')}>
+          <img src={record.cover.imageDataUrl} alt={record.cover.tone + '风格生成的图片'} />
+          <span>{record.cover.tone} · 查看图片</span>
+        </button>
+      )}
       <section className="detail-section">
         <div className="section-head">
           <h3>
@@ -186,7 +192,7 @@ export default function StudioTab({ record, onClose }) {
                     setView('cover');
                   }}
                 >
-                  做成封面
+                  生成图片
                 </button>
                 <button
                   type="button"

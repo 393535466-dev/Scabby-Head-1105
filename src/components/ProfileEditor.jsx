@@ -72,7 +72,6 @@ export default function ProfileEditor({ onClose, onSaved, creating = false }) {
         <label className="profile-name-field">
           你的昵称
           <input
-            data-initial-focus
             className="text-input"
             aria-label="你的昵称"
             value={profile.nickname}

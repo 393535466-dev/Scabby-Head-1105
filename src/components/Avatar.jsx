@@ -33,7 +33,7 @@ export default function Avatar({ profile, className = '', decorative = false }) 
       aria-hidden={decorative || undefined}
     >
       {value.avatarDataUrl && value.avatarDataUrl !== failedUrl ? (
-        <img src={value.avatarDataUrl} alt="" onError={() => setFailedUrl(value.avatarDataUrl)} />
+        <img className={value.avatarStyle ? 'avatar-cutout' : undefined} src={value.avatarDataUrl} alt="" onError={() => setFailedUrl(value.avatarDataUrl)} />
       ) : template?.index === value.avatarIndex ? (
         <img className="avatar-cutout" src={template.url} alt="" />
       ) : (

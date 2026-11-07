@@ -3,5 +3,5 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "functions": { "api/image.js": { "maxDuration": 180 } }
+  "functions": { "api/image.js": { "maxDuration": 180, "includeFiles": "public/avatars/character-templates.jpg" } }
 }

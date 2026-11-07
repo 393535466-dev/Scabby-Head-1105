@@ -15,11 +15,14 @@ export const DEFAULT_PROFILE = {
   nickname: '脑袋空空',
   avatarIndex: 1,
   avatarDataUrl: '',
+  avatarStyle: '',
   created: false,
 };
 
 export function normalizeProfile(value) {
   const profile = value && typeof value === 'object' ? value : {};
+  const avatarDataUrl = typeof profile.avatarDataUrl === 'string' &&
+    /^data:image\/(jpeg|png|webp);base64,/.test(profile.avatarDataUrl) ? profile.avatarDataUrl : '';
   return {
     nickname:
       typeof profile.nickname === 'string' && profile.nickname.trim()
@@ -29,11 +32,8 @@ export function normalizeProfile(value) {
       Number.isInteger(profile.avatarIndex) && profile.avatarIndex >= 0 && profile.avatarIndex < 9
         ? profile.avatarIndex
         : 1,
-    avatarDataUrl:
-      typeof profile.avatarDataUrl === 'string' &&
-      /^data:image\/(jpeg|png|webp);base64,/.test(profile.avatarDataUrl)
-        ? profile.avatarDataUrl
-        : '',
+    avatarDataUrl,
+    avatarStyle: avatarDataUrl && profile.avatarStyle === 'chounaozi-3d-v1' ? profile.avatarStyle : '',
     created: Boolean(profile.created),
   };
 }

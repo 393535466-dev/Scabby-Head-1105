@@ -1,4 +1,4 @@
-export const TONES = ['温和', '文艺', '搞笑', '腹黑', '犀利', '极简'];
+export const TONES = ['温和', '文艺', '搞笑', '腹黑', '犀利', '古风'];
 export const DIRECTIONS = ['正经好用', '无厘头'];
 export const DEFAULT_TAGS = [
   '产品灵感',
@@ -16,14 +16,16 @@ export const LEGACY_TAGS = {
   碎片: '随想片段',
 };
 export const normalizeTag = (tag) => LEGACY_TAGS[tag] || tag;
-export const normalizeTone = (tone) => (tone === '幽默' ? '搞笑' : tone || '温和');
+// Old preferences can still request a new version; saved output labels remain unchanged.
+export const normalizeTone = (tone) => ({ 幽默: '搞笑', 极简: '古风' }[tone] || (TONES.includes(tone) ? tone : '温和'));
+export const outputToneLabel = (tone) => tone === '幽默' ? '搞笑' : tone;
 export const TONE_HINTS = {
   温和: '像一个懂你的朋友，好好说。',
   文艺: '给小事一点画面，少一点矫情。',
   搞笑: '日子已经够累了，笑一下再说。',
   腹黑: '表面云淡风轻，心里已经接了三句。',
   犀利: '一针见血，嘴上不绕弯。',
-  极简: '能一句说完，就不说两句。',
+  古风: '借一点诗词意境，把眼前的小事轻轻写下。',
 };
 
 export const DIRECTION_HINT = {

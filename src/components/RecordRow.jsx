@@ -1,30 +1,34 @@
 import React from 'react';
 import { useStore } from '../lib/store.jsx';
 import { selectedOutput, recordTitle } from '../lib/records.js';
-import { normalizeTone } from '../lib/constants.js';
+import { outputToneLabel } from '../lib/constants.js';
+import { reminderState } from '../lib/reminders.js';
 import { clip } from '../lib/utils.js';
 import { timeLabel, dateTimeLabel } from '../lib/time.js';
 import Icon from './Icons.jsx';
 
-export default function RecordRow({ record, showDate = false }) {
+export default function RecordRow({ record, showDate = false, scheduled = false }) {
   const { setSelectedId, processing } = useStore();
   const chosen = selectedOutput(record);
   const latest = chosen || record.outputs.at(-1);
+  const state = reminderState(record);
+  const isReminder = Boolean(state && (scheduled || record.entryType === 'reminder'));
+  const timestamp = scheduled && state ? record.remindAt : record.createdAt;
   return (
     <button
       type="button"
-      className={`entry-row ${record.cover ? 'entry-cover' : ''}`}
-      aria-label={`打开记录 ${clip(record.text || recordTitle(record), 35)}`}
+      className={`entry-row ${record.cover ? 'entry-cover' : ''} ${isReminder ? `entry-reminder ${state}` : ''}`}
+      aria-label={`打开${record.entryType === 'reminder' ? '提醒' : '记录'} ${clip(record.text || recordTitle(record), 35)}`}
       onClick={() => setSelectedId(record.id)}
     >
       <span className="entry-rail">
-        <time>{showDate ? dateTimeLabel(record.createdAt) : timeLabel(record.createdAt)}</time>
+        <time dateTime={timestamp}>{showDate ? dateTimeLabel(timestamp) : timeLabel(timestamp)}</time>
         <span className="entry-dot" />
       </span>
       <span className="entry-body">
         <span className="entry-meta">
           {record.isExample && <span className="example-label">示例</span>}
-          {record.inputMethod === 'voice' ? '语音转文字' : record.photoDataUrl ? '照片' : '文字'}
+          {isReminder ? '提醒' : record.inputMethod === 'voice' ? '语音转文字' : record.photoDataUrl ? '照片' : '文字'}
           {record.pending && <span className="pending-mark">待继续</span>}
         </span>
         {(record.cover?.imageDataUrl || record.photoDataUrl) && (
@@ -38,11 +42,12 @@ export default function RecordRow({ record, showDate = false }) {
         ) : (
           latest && (
             <span className="entry-result">
-              <span>{normalizeTone(latest.tone)}</span>
+              <span>{outputToneLabel(latest.tone)}</span>
               {clip(latest.text, 100)}
             </span>
           )
         )}
+        {state && <span className={`entry-reminder-time ${state}`}><Icon name={state === 'done' ? 'check' : 'bell'} size={13} />{state === 'done' ? '已完成' : `${dateTimeLabel(record.remindAt)} · ${state === 'due' ? '已到时间' : '待提醒'}`}</span>}
         <span className="entry-footer">
           {record.tags.slice(0, 2).map((tag) => (
             <span key={tag}>#{tag}</span>

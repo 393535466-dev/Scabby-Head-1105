@@ -293,3 +293,63 @@ html, body, .app-shell, .launch-screen, .sheet-mask, .sheet-content,
 .avatar-creator-actions .link-btn { align-self: center; padding: 8px; font-size: 12px; }
 .avatar-photo-note { color: #a596ad; font-size: 11px; line-height: 1.8; text-align: center; }
 @media (max-width:360px) { .avatar-comparison { gap: 8px; } .avatar-creator-intro h3 { font-size: 23px; } .avatar-style-preview { gap: 6px; } .avatar-style-preview .user-avatar { width: 42px; height: 42px; } }
+
+/* Reading sizes: a modest increase for notes, without scaling the brand or tiles. */
+.entry-original { font-size: 16px; line-height: 1.8; }
+.entry-result { font-size: 14px; line-height: 1.85; }
+.entry-rail, .entry-meta, .entry-footer, .entry-result > span { font-size: 12px; }
+.entry-meta, .entry-rail { color: #81788e; }
+.entry-result > span { color: #8c779f; }
+.entry-row { grid-template-columns: 48px minmax(0,1fr); gap: 12px; }
+.timeline-day-label { font-size: 12px; }
+.timeline-day-label > span:first-child { font-size: 16px; }
+.entry-footer { flex-wrap: wrap; row-gap: 6px; }
+.entry-rail time { overflow-wrap: normal; }
+.tone-options button, .capture-tool, .capture-task button, .capture-submit .btn { font-size: 14px; }
+.tone-hint, .voice-feedback, .capture-personality .section-head > span { font-size: 12px; line-height: 1.7; }
+.capture-personality h3 { font-size: 16px; }
+.capture-tool { min-height: 42px; }
+.capture-tools { flex-wrap: wrap; }
+.capture-tools > .small { margin-left: auto; font-size: 12px; }
+.detail-meta, .detail-status, .output-meta, .output-actions button, .quiet-note, .detail-bottom { font-size: 12px; }
+.original-record p, .output-row > p { font-size: 16px; line-height: 1.8; }
+.field, .field > label, .capture-labels summary { font-size: 13px; }
+.day-cell { font-size: 14px; }
+.calendar-entries .section-head h2 { font-size: 16px; }
+
+.capture-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 19px 0 0; padding: 5px; border: 1px solid #eee8f2; border-radius: 16px; background: #f7f4fa; }
+.capture-mode button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border-radius: 11px; font-size: 15px; color: #93849f; }
+.capture-mode button.active { background: #fff; color: #ae543e; box-shadow: 0 2px 6px #39253b07; }
+.capture-personality { border-top: 0; margin-top: 21px; padding-top: 0; }
+.capture-schedule { margin: 24px 0 20px; }
+.reminder-time-field .field { margin: 0; }
+.reminder-time-field .field > span { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; color: #6c5b78; font-size: 14px; }
+.reminder-time-field small { color: #94879f; font-size: 12px; }
+.reminder-time-field input { display: block; width: 100%; min-width: 0; max-width: 100%; min-height: 48px; box-sizing: border-box; color: #51415f; font-size: 16px; }
+.reminder-time-field .quick-row { margin-top: 12px; display: flex; gap: 8px; }
+.reminder-time-field .quick-row button { min-height: 36px; padding: 7px 12px; font-size: 13px; }
+.capture-schedule .hint { margin: 15px 0 0; line-height: 1.8; color: #8c7b96; }
+.reminder-panel { padding: 22px 0 8px; border-top: 1px solid #efebf3; margin: 18px 0; }
+.reminder-panel .section-head h3 { display: flex; align-items: center; gap: 8px; font-size: 16px; }
+.reminder-status { padding: 4px 9px; border-radius: 8px; background: #fff0e9; color: #a35540; font-size: 12px; }
+.reminder-status.done { background: #eaf6f1; color: #39846b; }
+.reminder-datetime { margin: 18px 0; color: #54435f; font-size: 18px; line-height: 1.6; }
+.reminder-datetime small { display: block; font-size: 12px; color: #95869f; margin-top: 3px; }
+.reminder-panel .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+.reminder-panel .btn { font-size: 14px; }
+.calendar-export { margin-top: 12px; }
+.reminder-delivery-note { margin: 14px 0 8px; line-height: 1.85; color: #8b7a96; }
+.cancel-reminder { padding: 9px 0; font-size: 13px; color: #8c7b96; }
+.reminder-tags { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: #8c779f; }
+.entry-reminder-time { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; line-height: 1.7; color: #ac624b; margin-top: 10px; }
+.entry-reminder-time.done { color: #64867a; }
+.entry-reminder .entry-dot, .day-cell > i.has-reminders { background: var(--brand); }
+.entry-reminder.done .entry-dot { background: #9dc6b7; }
+.entry-reminder.done .entry-original { color: #8e8496; }
+.reminders-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 0 22px 10px; }
+.reminders-heading .page-title { margin: 0; }
+.reminders-heading .link-btn { font-size: 12px; }
+.calendar-legend { display: flex; align-items: center; justify-content: flex-end; gap: 6px; font-size: 11px; color: #97869f; margin: 9px 0 0; }
+.calendar-legend i { width: 4px; height: 4px; background: #b293d1; border-radius: 50%; margin-left: 9px; }
+.calendar-legend i.reminder { background: var(--brand); }
+@media (max-width:380px) { .entry-row { grid-template-columns: 43px minmax(0,1fr); gap: 10px; } .capture-tools { gap: 8px; } .capture-tool { padding: 9px 12px; } }

@@ -99,6 +99,7 @@ export const COLLECTIONS = [
 export function normalizeRecord(record) {
   return {
     ...record,
+    entryType: record.entryType === 'reminder' && record.remindAt ? 'reminder' : 'record',
     dateKey: record.dateKey || dateKeyOf(record.createdAt),
     outputs: Array.isArray(record.outputs) ? record.outputs : [],
     tags: Array.isArray(record.tags) ? [...new Set(record.tags.map(normalizeTag))] : [],

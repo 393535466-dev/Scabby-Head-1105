@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../lib/store.jsx';
-import { DIRECTIONS, DIRECTION_HINT } from '../lib/constants.js';
+import { DIRECTIONS, DIRECTION_HINT, normalizeTone } from '../lib/constants.js';
 import { selectedOutput } from '../lib/records.js';
 import TonePicker from '../components/TonePicker.jsx';
 import { copyText } from '../lib/utils.js';
@@ -9,10 +9,11 @@ import ChipGroup from '../components/ChipGroup.jsx';
 import CoverEditor from '../components/CoverEditor.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import Icon from '../components/Icons.jsx';
+import ReminderPanel from '../components/ReminderPanel.jsx';
 
 export default function StudioTab({ record, onClose }) {
   const { settings, updateRecord, removeRecord, processing, processRecord, showToast } = useStore();
-  const [tone, setTone] = useState(record.tone || settings.defaultTone);
+  const [tone, setTone] = useState(normalizeTone(record.tone || settings.defaultTone));
   const [direction, setDirection] = useState(record.direction || settings.defaultDirection);
   const [question, setQuestion] = useState(record.continuationQuestion);
   const [view, setView] = useState('detail');
@@ -85,6 +86,7 @@ export default function StudioTab({ record, onClose }) {
           {record.cover?.imageDataUrl ? '查看图片' : '生成图片'}
         </button>
       </div>
+      {record.remindAt && <ReminderPanel record={record} />}
       {record.cover?.imageDataUrl && (
         <button type="button" className="generated-record-image" onClick={() => setView('cover')}>
           <img src={record.cover.imageDataUrl} alt={record.cover.tone + '风格生成的图片'} />

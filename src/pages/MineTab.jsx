@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { requestNotificationPermission } from '../lib/notifications.js';
 import { useStore } from '../lib/store.jsx';
 import { TONES, DIRECTIONS, DIRECTION_HINT } from '../lib/constants.js';
 import { callAI } from '../lib/ai.js';
@@ -74,7 +75,7 @@ export default function MineTab({ onEditProfile }) {
       return;
     }
     try {
-      const p = await Notification.requestPermission();
+      const p = await requestNotificationPermission();
       setPerm(p);
       showToast(p === 'granted' ? '提醒已开启，页面开着就会弹通知' : '到期列表仍会高亮');
     } catch {
@@ -113,7 +114,7 @@ export default function MineTab({ onEditProfile }) {
             onChange={(v) => updateSettings({ defaultDirection: v })}
           />
           <p className="hint">
-            {DIRECTION_HINT[settings.defaultDirection] || ''} · 每次记录时都可以重新选择。
+            {DIRECTION_HINT[settings.defaultDirection] || ''} · 在记录详情里可以重新选择。
           </p>
         </div>
       </section>
@@ -248,7 +249,7 @@ export default function MineTab({ onEditProfile }) {
           <Icon name="bell" size={20} />
         </div>
         <p className="notice-status">浏览器通知：{PERM_LABEL[perm] || perm}</p>
-        <p className="hint">通知只在页面打开时生效；到期列表高亮不依赖通知权限。</p>
+        <p className="hint">通知只在页面打开时生效；到期列表不依赖通知权限。离开网页也要收到提醒，可在提醒详情中添加到手机日历。</p>
         {perm !== 'granted' && (
           <button type="button" className="btn ghost full" onClick={requestNotify}>
             开启浏览器通知
@@ -283,7 +284,7 @@ export default function MineTab({ onEditProfile }) {
       <section className="card about-card">
         <div className="section-head">
           <h2>关于臭脑子</h2>
-          <span className="muted small">Demo · v0.9</span>
+          <span className="muted small">Demo · v0.10</span>
         </div>
         <p className="hint">
           文艺、搞笑、腹黑，怎么说由你决定。输入文字、照片或语音转写，原文一直保留。

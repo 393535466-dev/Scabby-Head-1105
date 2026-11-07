@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '../lib/store.jsx';
-import { todayKey, dayLabel } from '../lib/time.js';
+import { todayKey, dayLabel, dateKeyOf } from '../lib/time.js';
+import { reminderState } from '../lib/reminders.js';
 import { recordMatches } from '../lib/records.js';
 import RecordRow from '../components/RecordRow.jsx';
 import ImageTile from '../components/ImageTile.jsx';
@@ -13,6 +14,7 @@ import BrandMark from '../components/BrandMark.jsx';
 export default function RecordTab({ remindersOnly = false, query = '', onEditProfile }) {
   const { records, setComposerOpen, loadExamples, updateRecord } = useStore();
   const [selection, setFilter] = useState('');
+  const [showCompleted, setShowCompleted] = useState(false);
   const filter = selection || (query.trim() ? 'all' : '');
   const scrollRef = useRef(null);
   useEffect(() => {
@@ -20,28 +22,29 @@ export default function RecordTab({ remindersOnly = false, query = '', onEditPro
   }, [filter, query]);
   const today = todayKey();
   const due = records.filter(
-    (r) => r.remindAt && !r.remindDone && new Date(r.remindAt).getTime() <= Date.now(),
+    (r) => reminderState(r) === 'due',
   );
   const visible = useMemo(
     () =>
       records.filter((r) => {
-        if (remindersOnly && (!r.remindAt || r.remindDone)) return false;
+        if (remindersOnly && (!reminderState(r) || (!showCompleted && r.remindDone))) return false;
         if (filter === 'text' && (!r.text || r.photoDataUrl)) return false;
         if (filter === 'images' && !r.photoDataUrl && !r.cover) return false;
         return recordMatches(r, query);
       }),
-    [records, filter, query, remindersOnly],
+    [records, filter, query, remindersOnly, showCompleted],
   );
   const groups = useMemo(() => {
     const result = new Map();
-    visible.forEach((r) => result.set(r.dateKey, [...(result.get(r.dateKey) || []), r]));
-    return [...result.entries()].sort(([a], [b]) => b.localeCompare(a));
-  }, [visible]);
+    const sorted = remindersOnly ? visible.slice().sort((a, b) => Date.parse(a.remindAt) - Date.parse(b.remindAt)) : visible;
+    sorted.forEach((r) => { const day = remindersOnly ? dateKeyOf(r.remindAt) : r.dateKey; result.set(day, [...(result.get(day) || []), r]); });
+    return [...result.entries()].sort(([a], [b]) => remindersOnly ? a.localeCompare(b) : b.localeCompare(a));
+  }, [visible, remindersOnly]);
 
   return (
     <div className="page timeline-page">
       {remindersOnly ? (
-        <h2 className="page-title">提醒</h2>
+        <div className="reminders-heading"><h2 className="page-title">提醒</h2><button type="button" className="link-btn" aria-pressed={showCompleted} onClick={() => setShowCompleted(!showCompleted)}>{showCompleted ? '隐藏已完成' : '显示已完成'}</button></div>
       ) : (
         <nav className="feed-filters" aria-label="记录筛选">
           {[
@@ -73,7 +76,7 @@ export default function RecordTab({ remindersOnly = false, query = '', onEditPro
           <CalendarTab query={query} />
         ) : (
           <>
-            {due.length > 0 && (
+            {due.length > 0 && !remindersOnly && (
               <section className="due-banner">
                 <div>
                   <Icon name="bell" size={17} />
@@ -140,7 +143,7 @@ export default function RecordTab({ remindersOnly = false, query = '', onEditPro
                       filter === 'images' ? (
                         <ImageTile key={record.id} record={record} />
                       ) : (
-                        <RecordRow key={record.id} record={record} />
+                        <RecordRow key={record.id} record={record} scheduled={remindersOnly} />
                       ),
                     )}
                   </div>

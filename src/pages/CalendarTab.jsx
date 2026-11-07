@@ -9,6 +9,7 @@ import {
   shiftDateKey,
 } from '../lib/time.js';
 import { recordMatches } from '../lib/records.js';
+import { calendarEntries } from '../lib/reminders.js';
 import RecordRow from '../components/RecordRow.jsx';
 import TagFilter from '../components/TagFilter.jsx';
 import EmptyState from '../components/EmptyState.jsx';
@@ -29,13 +30,15 @@ export default function CalendarTab({ query = '' }) {
   const [year, month] = selected.split('-').map(Number);
   const base = records.filter((r) => recordMatches(r, query));
   const filtered = base.filter((r) => !tag || r.tags.includes(tag));
+  const entries = calendarEntries(filtered);
   const counts = new Map();
-  filtered.forEach((r) => counts.set(r.dateKey, (counts.get(r.dateKey) || 0) + 1));
+  const reminderDays = new Set(entries.filter((entry) => entry.reminder).map((entry) => entry.dateKey));
+  entries.forEach((entry) => counts.set(entry.dateKey, (counts.get(entry.dateKey) || 0) + 1));
   const cells = useMemo(
     () => (mode === 'week' ? weekForDate(selected) : calendarMatrix(year, month)),
     [mode, selected, year, month],
   );
-  const dayRecords = filtered.filter((r) => r.dateKey === selected);
+  const dayRecords = entries.filter((entry) => entry.dateKey === selected);
   const navigate = (delta) => {
     setPickerOpen(false);
     if (mode === 'week') return setSelected(shiftDateKey(selected, delta * 7));
@@ -88,7 +91,7 @@ export default function CalendarTab({ query = '' }) {
                           (_, i) => Number(todayKey().slice(0, 4)) - 20 + i,
                         ),
                         year,
-                        ...records.map((r) => Number(r.dateKey.slice(0, 4))),
+                        ...calendarEntries(records).map((entry) => Number(entry.dateKey.slice(0, 4))),
                       ]),
                     ]
                       .sort((a, b) => a - b)
@@ -166,7 +169,7 @@ export default function CalendarTab({ query = '' }) {
               type="button"
               key={cell.key}
               className={`day-cell ${cell.inMonth ? '' : 'out'} ${selected === cell.key ? 'selected' : ''} ${cell.key === todayKey() ? 'today' : ''}`}
-              aria-label={`${cell.key}，${counts.get(cell.key) || 0} 条记录`}
+              aria-label={`${cell.key}，${counts.get(cell.key) || 0} 条${reminderDays.has(cell.key) ? '，含提醒' : '记录'}`}
               aria-pressed={selected === cell.key}
               onClick={() => {
                 setSelected(cell.key);
@@ -174,10 +177,11 @@ export default function CalendarTab({ query = '' }) {
               }}
             >
               <span>{cell.day}</span>
-              <i className={counts.get(cell.key) ? 'has-records' : ''} />
+              <i className={`${counts.get(cell.key) ? 'has-records' : ''} ${reminderDays.has(cell.key) ? 'has-reminders' : ''}`} />
             </button>
           ))}
         </div>
+        <p className="calendar-legend"><i />记录 <i className="reminder" />提醒</p>
       </section>
       <TagFilter records={base} value={tag} onChange={setTag} />
       <section className="calendar-entries">
@@ -202,8 +206,8 @@ export default function CalendarTab({ query = '' }) {
         </div>
         {dayRecords.length ? (
           <div className="entry-list">
-            {dayRecords.map((r) => (
-              <RecordRow key={r.id} record={r} />
+            {dayRecords.map((entry) => (
+              <RecordRow key={entry.record.id} record={entry.record} scheduled={entry.reminder} />
             ))}
           </div>
         ) : (

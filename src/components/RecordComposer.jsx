@@ -1,12 +1,12 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { useStore } from '../lib/store.jsx';
 import { fileToCompressedDataUrl, uid } from '../lib/utils.js';
-import { localInputToISO, quickReminderLocal, todayKey } from '../lib/time.js';
+import { todayKey } from '../lib/time.js';
+import { validateReminder } from '../lib/reminders.js';
 import Sheet from './Sheet.jsx';
 import Icon from './Icons.jsx';
 import TonePicker from './TonePicker.jsx';
-import ChipGroup from './ChipGroup.jsx';
-import { DIRECTIONS } from '../lib/constants.js';
+import ReminderTimeField from './ReminderTimeField.jsx';
 import useVoiceInput from '../lib/useVoiceInput.js';
 
 export default function RecordComposer() {
@@ -15,11 +15,12 @@ export default function RecordComposer() {
   const [text, setText] = useState('');
   const [photo, setPhoto] = useState('');
   const [reminder, setReminder] = useState('');
+  const [mode, setMode] = useState('record');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [confirmClose, setConfirmClose] = useState(false);
   const [tone, setTone] = useState(settings.defaultTone);
-  const [direction, setDirection] = useState(settings.defaultDirection);
+  const direction = settings.defaultDirection;
   const [action, setAction] = useState('rewrite');
   const [tags, setTags] = useState([]);
   const [inputMethod, setInputMethod] = useState('text');
@@ -29,11 +30,12 @@ export default function RecordComposer() {
     onRecognized: () => setInputMethod('voice'),
   });
   const fileRef = useRef(null);
+  const submitted = useRef(false);
   const close = useCallback(() => {
     voice.stop();
-    if (text.trim() || photo || busy || voice.active) setConfirmClose(true);
+    if (text.trim() || photo || reminder || busy || voice.active) setConfirmClose(true);
     else setComposerOpen(false);
-  }, [text, photo, busy, setComposerOpen, voice.stop, voice.active]);
+  }, [text, photo, reminder, busy, setComposerOpen, voice.stop, voice.active]);
 
   const pickPhoto = async (event) => {
     const file = event.target.files?.[0];
@@ -59,13 +61,24 @@ export default function RecordComposer() {
   };
 
   const save = (withAI = false) => {
+    if (busy || voice.active || submitted.current) return;
+    let remindAt = '';
+    if (mode === 'reminder') {
+      if (!text.trim()) { setError('写一句要提醒的事，或用语音输入。'); return; }
+      const result = validateReminder(reminder);
+      if (result.error) { setError(result.error); return; }
+      remindAt = result.iso;
+      withAI = false;
+    }
     if (!text.trim() && !photo) {
       setError('先写一句，或者加张照片');
       return;
     }
     const id = uid();
+    submitted.current = true;
     const record = {
       id,
+      entryType: mode,
       kind: photo ? 'photo' : 'text',
       text: text.trim(),
       photoDataUrl: photo,
@@ -76,14 +89,14 @@ export default function RecordComposer() {
       tags,
       inputMethod,
       outputs: [],
-      remindAt: localInputToISO(reminder),
+      remindAt,
       remindDone: false,
       notified: false,
     };
     addRecord(record);
     setComposerOpen(false);
     setSelectedId(id);
-    showToast(withAI ? '原文记下了，正在按你的语气加工' : '记下了，想加工时再回来');
+    showToast(mode === 'reminder' ? '提醒设好了，已放进对应日期的日历' : withAI ? '原文记下了，正在按你的语气加工' : '记下了，想加工时再回来');
     if (withAI)
       processRecord(id, photo ? 'caption' : action, { tone, direction, initialRecord: record });
   };
@@ -115,7 +128,7 @@ export default function RecordComposer() {
           }}
         >
           <label className="sr-only" htmlFor="record-input">
-            随手记
+            {mode === 'reminder' ? '提醒内容' : '随手记'}
           </label>
           <textarea
             id="record-input"
@@ -125,7 +138,7 @@ export default function RecordComposer() {
             value={text}
             onChange={(event) => setText(event.target.value)}
             maxLength={1000}
-            placeholder="不用想好，先从这句话开始…"
+            placeholder={mode === 'reminder' ? '到了时间，要提醒自己做什么？' : '不用想好，先从这句话开始…'}
             rows={3}
             readOnly={voice.active}
           />
@@ -180,16 +193,18 @@ export default function RecordComposer() {
                   ? '当前浏览器未开放语音识别。可换用支持语音识别的浏览器，或使用手机键盘的麦克风输入。'
                   : '使用浏览器的语音识别服务，转成文字后可修改。')}
           </div>
-          <section className="capture-personality">
+          <div className="capture-mode" role="group" aria-label="记录类型">
+            {[['record', '记录', 'note'], ['reminder', '提醒', 'bell']].map(([value, label, icon]) => (
+              <button key={value} type="button" aria-pressed={mode === value} className={mode === value ? 'active' : ''}
+                onClick={() => { setMode(value); setError(''); }}><Icon name={icon} size={18} />{label}</button>
+            ))}
+          </div>
+          {mode === 'record' ? <section className="capture-personality">
             <div className="section-head">
               <h3>这次，想怎么说？</h3>
               <span>随时能改</span>
             </div>
             <TonePicker value={tone} onChange={setTone} />
-            <div className="capture-direction">
-              <span>发挥方向</span>
-              <ChipGroup options={DIRECTIONS} value={direction} onChange={setDirection} />
-            </div>
             {!photo && (
               <div className="capture-task" role="group" aria-label="加工方式">
                 <button
@@ -210,7 +225,10 @@ export default function RecordComposer() {
                 </button>
               </div>
             )}
-          </section>
+          </section> : <section className="capture-schedule" aria-label="设置提醒">
+            <ReminderTimeField value={reminder} onChange={(value) => { setReminder(value); setError(''); }} />
+            <p className="hint">会放进应用日历，在页面打开时到点提醒。离开网页也要提醒，保存后可添加到手机日历。</p>
+          </section>}
           <details className="capture-labels">
             <summary>
               加标签 <span>{tags.length ? `已选 ${tags.length} 个` : '可选'}</span>
@@ -233,42 +251,13 @@ export default function RecordComposer() {
               ))}
             </div>
           </details>
-          <details className="capture-reminder">
-            <summary>
-              <Icon name="clock" size={17} />
-              {reminder ? '已设置提醒' : '顺便提醒我'}
-            </summary>
-            <label className="field">
-              提醒时间
-              <input
-                aria-label="提醒时间"
-                className="text-input"
-                type="datetime-local"
-                value={reminder}
-                onChange={(event) => setReminder(event.target.value)}
-              />
-            </label>
-            <div className="quick-row">
-              <button type="button" onClick={() => setReminder(quickReminderLocal('1h'))}>
-                1 小时后
-              </button>
-              <button type="button" onClick={() => setReminder(quickReminderLocal('tonight'))}>
-                今晚
-              </button>
-              {reminder && (
-                <button type="button" onClick={() => setReminder('')}>
-                  取消提醒
-                </button>
-              )}
-            </div>
-            <p className="hint">到期会在记录页显示，页面打开时可接收浏览器通知。</p>
-          </details>
           {error && (
             <p className="form-error" role="alert">
               {error}
             </p>
           )}
           <div className="capture-submit">
+            {mode === 'reminder' ? <button type="submit" className="btn primary" disabled={busy || voice.active}><Icon name="bell" size={17} />保存提醒</button> : <>
             <button
               type="button"
               className="btn ghost"
@@ -280,6 +269,7 @@ export default function RecordComposer() {
             <button type="submit" className="btn primary" disabled={busy || voice.active}>
               记下并加工 <Icon name="sparkles" size={17} />
             </button>
+            </>}
           </div>
         </form>
       )}

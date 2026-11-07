@@ -15,7 +15,7 @@ const TONE_GUIDE = {
   搞笑: '轻松好笑，有具体包袱和生活里的反差，像朋友间的俏皮吐槽，不用网络烂梗堆砌',
   腹黑: '表面客气、内心有戏，带一点机灵的反讽；吐槽事情，不攻击用户或他人身份，不恶意羞辱',
   文艺: '有画面感、克制、略带诗意',
-  极简: '短句、少修饰、信息密度高',
+  古风: '古典诗词意境，含蓄清雅、有韵律，用自然易懂的简体中文。采用凝练的古风句式、短诗或对句，避免现代口语白描，要与普通文艺散文明显不同。保留原事物、时间、人物和时代，不把现代场景改成古代故事；不硬套风花雪月、不堆生僻字、不杜撰典故，不冒充古人原句',
 };
 const DIRECTION_GUIDE = {
   正经好用: '给具体、可执行、能落地的建议或下一步，不写空话',
@@ -55,7 +55,7 @@ function arr(v) {
 }
 
 function buildSpec(action, p) {
-  const tone = str(p.tone, '温和');
+  const tone = p.tone === '极简' ? '古风' : str(p.tone, '温和');
   const direction = str(p.direction, '正经好用');
   const common = [
     '你是「臭脑子」App 的内容加工助手。「臭脑子」只是产品名，不代表你要嘲讽用户；不得贬低、攻击或羞辱用户本人。',
@@ -74,7 +74,7 @@ function buildSpec(action, p) {
 
   if (action === 'rewrite') {
     return {
-      system: `${common}\n任务：根据原文写 3 条不同的表达，忠于原事件和用户补记，不捏造事实。按用户选的语气写出鲜明差别，每条 15~70 字。适合私人生活记录，能让用户觉得有趣、想留下。不要给行动建议，不编号、不解释。只输出 json：{"items":["表达一","表达二","表达三"]}。`,
+      system: `${common}\n任务：根据原文写 3 条不同的表达，忠于原事件和用户补记，不捏造事实。按用户选的语气写出鲜明差别，每条 15~70 字。${tone === '古风' ? '三条分别尝试短诗对句、古风散句和小令语感；至少一条使用整齐的五言或七言句式，保留原文中的生活细节。' : ''}适合私人生活记录，能让用户觉得有趣、想留下。不要给行动建议，不编号、不解释。只输出 json：{"items":["表达一","表达二","表达三"]}。`,
       user: `原始记录：${sourceText}`,
       image: null,
     };
@@ -114,22 +114,28 @@ function demoData(action, p) {
   const raw = str(p.text || p.note, '');
   const subject = raw ? (raw.length > 16 ? `${raw.slice(0, 16)}…` : raw) : '这一笔';
   const direction = str(p.direction, '正经好用');
-  const tone = str(p.tone, '温和');
+  const tone = p.tone === '极简' ? '古风' : str(p.tone, '温和');
   if (action === 'rewrite') {
     const versions = {
       文艺: [`${subject}，是今天没被日历写下的那一行。`, `把「${subject}」收好，留给以后的某个傍晚。`, `日子翻过一页，这一笔还留着。${subject}`],
       搞笑: [`${subject}。生活有自己的编剧，而且不肯给我看剧本。`, `关于「${subject}」，本人的脑子表示：先存着，明天再开机。`, `今日份剧情：${subject}。主演本人，片酬为零。`],
       腹黑: [`${subject}。我当然没意见，意见已经自己写成了小作文。`, `关于「${subject}」，表面风平浪静，脑内已经开完三场会。`, `${subject}。挺好的，至少素材又多了一条。`],
+      古风: [`${subject}，一笔闲记，留与来日细看。`, `且将「${subject}」写入此页，平常光景，亦有余韵。`, `${subject}。人间寻常事，落笔便成章。`],
     };
     return { items: versions[tone] || [`${subject}。先记下来，给今天留一个位置。`, `今天的小事：${subject}。`, `把「${subject}」放在这里，改天再看。`] };
   }
   if (action === 'extend') {
+    if (tone === '古风') return { items: [
+      `为「${subject}」另记一页，先写所愿，再记今日可试的一小步。`,
+      `此念不妨留待来日，与旧日所记相照，看「${subject}」又添何种新意。`,
+      `且邀一位友人，说说「${subject}」；言语未尽处，便是下回可寻的路。`,
+    ] };
     const serious = [
       `把「${subject}」拆成三步：先写下动机，再找一个 10 分钟能试的动作，最后约个时间回看。`,
       `给「${subject}」配个最小版本：今天只做最不费力的那一小步，别一次做完。`,
       `找个人把「${subject}」讲一遍，讲不清楚的地方就是接下来要补的信息。`,
       `为「${subject}」写一条反例：如果一周后完全没动，最可能卡在哪一步。`,
-      `把「${subject}」打上气味标签，月底和同类记录放在一起回看。`,
+      `把「${subject}」打上主题标签，月底和同类记录放在一起回看。`,
     ];
     const silly = [
       `如果「${subject}」有气味，大概是雨后操场混着烤红薯的那一缕。`,
@@ -140,6 +146,7 @@ function demoData(action, p) {
     return { items: direction === '无厘头' ? silly : serious };
   }
   if (action === 'caption') {
+    if (tone === '古风') return { items: [`${subject}，此刻入画，余意留心。`, '一帧存旧影，片刻亦长留。', '寻常光景，落入此间。'] };
     return {
       items: [
         `${subject}｜今天也值得留一张。`,

@@ -40,21 +40,22 @@ export function formatLocalInput(d) {
 /** datetime-local 的值按 Asia/Shanghai 墙钟时间解释，转成 ISO */
 export function localInputToISO(v) {
   if (!v) return '';
-  const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
   if (!m) return '';
   const d = new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:00+08:00`);
-  return Number.isNaN(d.getTime()) ? '' : d.toISOString();
+  return Number.isNaN(d.getTime()) || formatLocalInput(d) !== v ? '' : d.toISOString();
 }
 
 export function isoToLocalInput(iso) {
   return iso ? formatLocalInput(new Date(iso)) : '';
 }
 
-export function quickReminderLocal(kind) {
-  const p = shParts(new Date());
+export function quickReminderLocal(kind, now = new Date()) {
+  const p = shParts(now);
   const base = new Date(`${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:00+08:00`);
   const at = (h, mi) => new Date(`${p.year}-${p.month}-${p.day}T${String(h).padStart(2, '0')}:${String(mi).padStart(2, '0')}:00+08:00`);
   if (kind === '1h') return formatLocalInput(new Date(base.getTime() + 3600000));
+  if (kind === 'tomorrow') return formatLocalInput(new Date(at(9, 0).getTime() + 86400000));
   const t = kind === 'tonight' ? at(21, 0) : at(9, 0);
   if (t.getTime() <= base.getTime()) t.setTime(t.getTime() + 86400000);
   return formatLocalInput(t);
@@ -70,6 +71,12 @@ export function dateTimeLabel(iso) {
   if (!iso) return '';
   const p = shParts(new Date(iso));
   return `${Number(p.month)}月${Number(p.day)}日 ${p.hour}:${p.minute}`;
+}
+
+export function fullDateTimeLabel(iso) {
+  if (!iso || Number.isNaN(new Date(iso).getTime())) return '';
+  const p = shParts(new Date(iso));
+  return `${p.year}年${Number(p.month)}月${Number(p.day)}日 ${p.hour}:${p.minute}`;
 }
 
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];

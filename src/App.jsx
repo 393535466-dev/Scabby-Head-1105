@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StoreProvider, useStore } from './lib/store.jsx';
 import TabBar from './components/TabBar.jsx';
 import RecordComposer from './components/RecordComposer.jsx';
@@ -15,7 +15,9 @@ import BrandMark from './components/BrandMark.jsx';
 import BrandWordmark from './components/BrandWordmark.jsx';
 import { normalizeProfile } from './lib/profile.js';
 import { todayChipLabel } from './lib/time.js';
-import { clip } from './lib/utils.js';
+import { nextReminderDelay, reminderState } from './lib/reminders.js';
+import { showReminderNotification } from './lib/notifications.js';
+import ReminderDetail from './components/ReminderDetail.jsx';
 
 function Shell() {
   const {
@@ -30,8 +32,13 @@ function Shell() {
     setSelectedId,
     composerOpen,
     settings,
+    showToast,
   } = useStore();
   const [, setClock] = useState(Date.now());
+  const notifying = useRef(new Set());
+  const announced = useRef(new Set());
+  const liveRecords = useRef(records);
+  liveRecords.current = records;
   const [welcomeOpen, setWelcomeOpen] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -44,38 +51,44 @@ function Shell() {
     setSearchOpen(false);
   }, [tab]);
   const due = records.filter(
-    (item) => item.remindAt && !item.remindDone && new Date(item.remindAt).getTime() <= Date.now(),
+    (item) => reminderState(item) === 'due',
   );
 
   useEffect(() => {
+    let stopped = false, timer;
     const tick = () => {
+      if (stopped) return;
+      clearTimeout(timer);
       setClock(Date.now());
-      if (!('Notification' in window) || Notification.permission !== 'granted') return;
-      const dueRecords = records.filter(
-        (item) =>
-          item.remindAt &&
-          !item.notified &&
-          !item.remindDone &&
-          new Date(item.remindAt).getTime() <= Date.now(),
-      );
-      const notified = [];
-      dueRecords.forEach((item) => {
-        try {
-          new Notification('臭脑子 · 别忘了', {
-            body: clip(item.text || item.caption || '你设的提醒到点啦', 40),
-            tag: item.id,
-          });
-          notified.push(item.id);
-        } catch {
-          /* 浏览器不允许通知时，页面内仍展示到期列表 */
-        }
+      const fresh = records.filter((item) => reminderState(item) === 'due' && !announced.current.has(`${item.id}:${item.remindAt}`));
+      if (fresh.length) {
+        fresh.forEach((item) => announced.current.add(`${item.id}:${item.remindAt}`));
+        showToast(`提醒到点了 · ${(fresh[0].text || '有件事别忘了').slice(0, 45)}${fresh.length > 1 ? `（共 ${fresh.length} 件）` : ''}`, 8000);
+      }
+      records.filter((item) => !item.notified && reminderState(item) === 'due').forEach((item) => {
+        const key = `${item.id}:${item.remindAt}`;
+        if (notifying.current.has(key)) return;
+        notifying.current.add(key);
+        const stillDue = () => liveRecords.current.some((latest) => latest.id === item.id && latest.remindAt === item.remindAt && !latest.notified && reminderState(latest) === 'due');
+        showReminderNotification(item, stillDue).then((shown) => { if (shown) markNotified([item]); }).finally(() => notifying.current.delete(key));
       });
-      if (notified.length) markNotified(notified);
+      timer = setTimeout(tick, nextReminderDelay(records));
     };
     tick();
-    const timer = setInterval(tick, 30000);
-    return () => clearInterval(timer);
-  }, [records, markNotified]);
+    document.addEventListener('visibilitychange', tick);
+    window.addEventListener('focus', tick);
+    return () => { stopped = true; clearTimeout(timer); document.removeEventListener('visibilitychange', tick); window.removeEventListener('focus', tick); };
+  }, [records, markNotified, showToast]);
+
+  useEffect(() => {
+    const openReminder = (event) => {
+      if (event.data?.type !== 'OPEN_REMINDER') return;
+      setWelcomeOpen(false); setTab('reminders'); setSelectedId(event.data.recordId || '');
+    };
+    if (new URLSearchParams(window.location.search).get('reminders') === '1') { setWelcomeOpen(false); setTab('reminders'); }
+    navigator.serviceWorker?.addEventListener('message', openReminder);
+    return () => navigator.serviceWorker?.removeEventListener('message', openReminder);
+  }, [setTab, setSelectedId]);
 
   const profileEditor = profileEditorOpen && (
     <ProfileEditor
@@ -219,8 +232,8 @@ function Shell() {
       {composerOpen && <RecordComposer />}
       {profileEditor}
       {record && (
-        <Sheet title="这条记录" onClose={closeRecord}>
-          <StudioTab key={record.id} record={record} onClose={closeRecord} />
+        <Sheet title={record.entryType === 'reminder' ? '这条提醒' : '这条记录'} onClose={closeRecord}>
+          {record.entryType === 'reminder' ? <ReminderDetail key={record.id} record={record} /> : <StudioTab key={record.id} record={record} onClose={closeRecord} />}
         </Sheet>
       )}
       {toast && (

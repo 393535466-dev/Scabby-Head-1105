@@ -31,10 +31,10 @@ export function StoreProvider({ children }) {
   recordsRef.current = records;
   const toastTimer = useRef(null);
 
-  const showToast = useCallback((msg) => {
+  const showToast = useCallback((msg, duration = 2800) => {
     setToast(msg);
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(''), 2800);
+    toastTimer.current = setTimeout(() => setToast(''), duration);
   }, []);
 
   useEffect(() => {
@@ -101,9 +101,9 @@ export function StoreProvider({ children }) {
       ),
     }));
   }, []);
-  const markNotified = useCallback((ids) => {
-    const set = new Set(ids);
-    setRecords((prev) => prev.map((r) => (set.has(r.id) ? { ...r, notified: true } : r)));
+  const markNotified = useCallback((reminders) => {
+    const times = new Map(reminders.map((item) => [item.id, item.remindAt]));
+    setRecords((prev) => prev.map((r) => (!r.remindDone && times.get(r.id) === r.remindAt && times.has(r.id) ? { ...r, notified: true } : r)));
   }, []);
   const clearRecords = useCallback(() => {
     setRecords([]);

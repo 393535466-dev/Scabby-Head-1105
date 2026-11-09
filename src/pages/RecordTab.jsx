@@ -11,7 +11,7 @@ import CalendarTab from './CalendarTab.jsx';
 import PersonalWelcome from '../components/PersonalWelcome.jsx';
 import BrandMark from '../components/BrandMark.jsx';
 
-export default function RecordTab({ remindersOnly = false, query = '', onEditProfile }) {
+export default function RecordTab({ remindersOnly = false, query = '', onEditProfile, WelcomeComponent = PersonalWelcome }) {
   const { records, setComposerOpen, loadExamples, updateRecord } = useStore();
   const [selection, setFilter] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
@@ -71,7 +71,7 @@ export default function RecordTab({ remindersOnly = false, query = '', onEditPro
         ref={scrollRef}
       >
         {!filter && !remindersOnly ? (
-          <PersonalWelcome onEditProfile={onEditProfile} />
+          <WelcomeComponent onEditProfile={onEditProfile} />
         ) : filter === 'calendar' && !remindersOnly ? (
           <CalendarTab query={query} />
         ) : (

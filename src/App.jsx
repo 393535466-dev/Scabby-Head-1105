@@ -19,7 +19,7 @@ import { nextReminderDelay, reminderState } from './lib/reminders.js';
 import { showReminderNotification } from './lib/notifications.js';
 import ReminderDetail from './components/ReminderDetail.jsx';
 
-function Shell() {
+function Shell({ WelcomeComponent, RecordIcon, skipLaunch = false }) {
   const {
     tab,
     setTab,
@@ -39,7 +39,7 @@ function Shell() {
   const announced = useRef(new Set());
   const liveRecords = useRef(records);
   liveRecords.current = records;
-  const [welcomeOpen, setWelcomeOpen] = useState(true);
+  const [welcomeOpen, setWelcomeOpen] = useState(!skipLaunch);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
@@ -216,7 +216,7 @@ function Shell() {
               </button>
             )}
             {tab === 'record' && (
-              <RecordTab query={query} onEditProfile={() => setProfileEditorOpen(true)} />
+              <RecordTab query={query} onEditProfile={() => setProfileEditorOpen(true)} WelcomeComponent={WelcomeComponent} />
             )}
             {tab === 'library' && <LibraryTab query={query} />}
             {tab === 'reminders' && <RecordTab remindersOnly query={query} />}
@@ -228,7 +228,7 @@ function Shell() {
           </>
         )}
       </main>
-      {ready && <TabBar />}
+      {ready && <TabBar RecordIcon={RecordIcon} />}
       {composerOpen && <RecordComposer />}
       {profileEditor}
       {record && (
@@ -245,10 +245,10 @@ function Shell() {
   );
 }
 
-export default function App() {
+export default function App({ WelcomeComponent, RecordIcon, skipLaunch = false }) {
   return (
     <StoreProvider>
-      <Shell />
+      <Shell WelcomeComponent={WelcomeComponent} RecordIcon={RecordIcon} skipLaunch={skipLaunch} />
     </StoreProvider>
   );
 }

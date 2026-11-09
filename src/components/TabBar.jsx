@@ -3,7 +3,7 @@ import { TABS } from '../lib/constants.js';
 import { useStore } from '../lib/store.jsx';
 import Icon from './Icons.jsx';
 
-export default function TabBar() {
+export default function TabBar({ RecordIcon }) {
   const { tab, setTab, setComposerOpen } = useStore();
   const navRef = useRef(null);
   const [size, setSize] = useState({ width: 500, height: 80 });
@@ -34,7 +34,7 @@ export default function TabBar() {
               aria-label="记一笔"
               onClick={() => setComposerOpen(true)}
             >
-              <Icon name="plus" size={32} />
+              {RecordIcon ? <RecordIcon /> : <Icon name="plus" size={32} />}
             </button>
           )}
           <button

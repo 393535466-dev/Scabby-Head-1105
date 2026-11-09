@@ -1,0 +1,16 @@
+/* 九头像校准页，仅供本地设计复核。 */
+
+.avatar-review { height: 100dvh; overflow: auto; padding: 28px 24px 48px; background: #f7f7fb; }
+.avatar-review-inner { max-width: 980px; margin: auto; }
+.avatar-review h1 { font-family: var(--handwriting); font-size: 28px; font-weight: 400; margin: 12px 0 5px; }
+.avatar-review p { color: #86768f; font-size: 14px; }
+.avatar-review a { color: #b8604c; }
+.avatar-review-controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0; }
+.avatar-review-controls button { background: white; border-radius: 20px; padding: 9px 15px; font-size: 14px; }
+.avatar-review-controls button[aria-pressed="true"] { background: #ff7658; color: white; }
+.avatar-review-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+.avatar-review-item { background: #fff; border-radius: 24px; text-align: center; padding: 12px 10px 18px; }
+.avatar-review-item .animated-avatar { width: 100%; aspect-ratio: 1; height: auto; max-width: 256px; margin: auto; }
+.avatar-review-item .user-avatar { width: 100%; height: 100%; position: absolute; inset: 0; background: transparent; border-radius: 0; }
+.avatar-review-item h2 { font: 18px var(--handwriting); }
+@media (max-width:540px) { .avatar-review { padding: 20px 14px; } .avatar-review-grid { grid-template-columns: repeat(2,1fr); gap: 10px; } }

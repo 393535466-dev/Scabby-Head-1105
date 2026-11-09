@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { requestNotificationPermission } from '../lib/notifications.js';
 import { useStore } from '../lib/store.jsx';
-import { TONES, DIRECTIONS, DIRECTION_HINT } from '../lib/constants.js';
+import { TONES } from '../lib/constants.js';
 import { callAI } from '../lib/ai.js';
 import ChipGroup from '../components/ChipGroup.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
@@ -104,18 +104,6 @@ export default function MineTab({ onEditProfile }) {
             value={settings.defaultTone}
             onChange={(v) => updateSettings({ defaultTone: v })}
           />
-        </div>
-        <div className="divider" />
-        <div className="field">
-          <label>默认推演方向</label>
-          <ChipGroup
-            options={DIRECTIONS}
-            value={settings.defaultDirection}
-            onChange={(v) => updateSettings({ defaultDirection: v })}
-          />
-          <p className="hint">
-            {DIRECTION_HINT[settings.defaultDirection] || ''} · 在记录详情里可以重新选择。
-          </p>
         </div>
       </section>
 

@@ -189,23 +189,23 @@ async function requestDeepSeek({ apiKey, model, spec, variant }) {
   }
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 20000);
-  let resp;
   try {
-    resp = await fetch(`${BASE_URL}/chat/completions`, {
+    const resp = await fetch(`${BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify(body),
       signal: ctrl.signal,
     });
+    if (!resp.ok) {
+      const detail = (await resp.text().catch(() => '')).slice(0, 240);
+      throw new Error(`DeepSeek ${resp.status} ${detail}`);
+    }
+    const json = await resp.json();
+    return str(json?.choices?.[0]?.message?.content, '');
   } finally {
+    // 超时覆盖响应体读取，不能在收到响应头时提前撤销。
     clearTimeout(timer);
   }
-  if (!resp.ok) {
-    const detail = (await resp.text().catch(() => '')).slice(0, 240);
-    throw new Error(`DeepSeek ${resp.status} ${detail}`);
-  }
-  const json = await resp.json();
-  return str(json?.choices?.[0]?.message?.content, '');
 }
 
 function parseLoose(text) {

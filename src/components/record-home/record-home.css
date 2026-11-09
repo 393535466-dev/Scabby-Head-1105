@@ -1,6 +1,7 @@
 /* 记录首页欢迎动效：正式页面与设计预览共用。 */
-.record-home-experience .record-scroll.is-welcome { padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
-.record-home-welcome { flex: 1; display: grid; place-items: center; padding: 22px 18px 18px; min-height: min-content; text-align: center; }
+.record-home-experience .record-scroll.is-welcome { padding: 0; margin-bottom: var(--tabbar-clearance); container: record-welcome / size; }
+/* 欢迎内容只能在加号上方滚动，安全区与底栏共用尺寸，避免小屏/微信遮挡。 */
+.record-home-welcome { flex: 1 0 auto; display: grid; place-items: center; padding: 4px 18px 28px; min-height: 100%; text-align: center; }
 .welcome-sequence { width: 100%; max-width: 420px; }
 .avatar-stage { width: 100%; max-width: 384px; height: 270px; margin: 0 auto 14px; position: relative; }
 .avatar-light { position: absolute; inset: 10px -18px -12px; background: radial-gradient(ellipse at 50% 48%, #ffece2a6 0%, #fff2e94d 34%, transparent 70%); pointer-events: none; }
@@ -77,8 +78,17 @@
   .avatar-stage { max-width: 420px; height: 270px; }
   .welcome-bubble { font-size: 17px; }
 }
-@media (max-height: 750px) {
-  .record-home-welcome { padding-top: 12px; padding-bottom: 10px; }
+@container record-welcome (max-height: 520px) {
+  .record-home-welcome { padding-bottom: 12px; }
+  .avatar-stage { height: 240px; margin-bottom: 10px; }
+  .avatar-arrival { top: 43.75px; }
+  .bubble-two { top: 176px; }
+  .bubble-three { bottom: 4px; }
+  .effect-surprise, .effect-question { top: 94px; }
+  .effect-thought { top: 3px; }
+}
+@container record-welcome (max-height: 450px) {
+  .record-home-welcome { padding-top: 4px; padding-bottom: 24px; }
   .avatar-stage { height: 197px; max-width: 350px; margin-bottom: 12px; }
   .avatar-arrival { width: 148.5px; height: 148.5px; margin-left: -74.25px; top: 33.75px; }
   .bubble-one { top: 3px; left: 0; }

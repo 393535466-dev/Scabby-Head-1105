@@ -1,9 +1,10 @@
 import { runAI } from '../server/ai-core.js';
 
 // Vercel Serverless Function。DEEPSEEK_API_KEY 只在这里通过 process.env 读取。
-export const config = { maxDuration: 30 };
+export const config = { maxDuration: 60 };
 
 export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ ok: false, error: '仅支持 POST' });

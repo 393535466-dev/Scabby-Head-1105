@@ -1,20 +1,26 @@
 import React, { useState } from 'react';
 import { useStore } from '../lib/store.jsx';
-import { DIRECTIONS, DIRECTION_HINT, normalizeTone } from '../lib/constants.js';
+import { normalizeTone } from '../lib/constants.js';
 import { selectedOutput } from '../lib/records.js';
 import TonePicker from '../components/TonePicker.jsx';
 import { copyText } from '../lib/utils.js';
-import { dateTimeLabel } from '../lib/time.js';
-import ChipGroup from '../components/ChipGroup.jsx';
+import { dateTimeLabel, isoToLocalInput } from '../lib/time.js';
+import { validateReminder } from '../lib/reminders.js';
+import { aiErrorMessage } from '../lib/ai.js';
 import CoverEditor from '../components/CoverEditor.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import Icon from '../components/Icons.jsx';
 import ReminderPanel from '../components/ReminderPanel.jsx';
+import RecordModePicker from '../components/RecordModePicker.jsx';
+import ReminderTimeField from '../components/ReminderTimeField.jsx';
 
 export default function StudioTab({ record, onClose }) {
   const { settings, updateRecord, removeRecord, processing, processRecord, showToast } = useStore();
   const [tone, setTone] = useState(normalizeTone(record.tone || settings.defaultTone));
-  const [direction, setDirection] = useState(record.direction || settings.defaultDirection);
+  const direction = record.direction || settings.defaultDirection;
+  const [mode, setMode] = useState('record');
+  const [reminder, setReminder] = useState(isoToLocalInput(record.remindAt));
+  const [reminderError, setReminderError] = useState('');
   const [question, setQuestion] = useState(record.continuationQuestion);
   const [view, setView] = useState('detail');
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -25,6 +31,12 @@ export default function StudioTab({ record, onClose }) {
   const outputs = record.outputs.slice().reverse();
   const visibleOutputs = allOutputs ? outputs : outputs.slice(0, 5);
   const run = (action) => processRecord(record.id, action, { tone, direction });
+  const saveReminder = () => {
+    const result = validateReminder(reminder);
+    if (result.error) { setReminderError(result.error); return; }
+    updateRecord(record.id, { entryType: 'reminder', remindAt: result.iso, remindDone: false, notified: false });
+    showToast('提醒设好了，原文和加工版本也已保留');
+  };
 
   const keep = () => {
     if (!chosen) {
@@ -86,14 +98,21 @@ export default function StudioTab({ record, onClose }) {
           {record.cover?.imageDataUrl ? '查看图片' : '生成图片'}
         </button>
       </div>
-      {record.remindAt && <ReminderPanel record={record} />}
+      <RecordModePicker value={mode} disabled={Boolean(busy)} onChange={(value) => { setMode(value); setReminderError(''); }} />
+      {mode === 'reminder' && <section className="capture-schedule" aria-label="设置提醒">
+        <ReminderTimeField value={reminder} onChange={(value) => { setReminder(value); setReminderError(''); }} />
+        {reminderError && <p className="form-error" role="alert">{reminderError}</p>}
+        <p className="hint">按选择的日期放进日历，在页面打开时到点提醒。保存后也可添加到手机日历。</p>
+        <button type="button" className="btn primary full" onClick={saveReminder}><Icon name="bell" size={17} />保存提醒</button>
+      </section>}
+      {mode === 'record' && record.remindAt && <ReminderPanel record={record} />}
       {record.cover?.imageDataUrl && (
         <button type="button" className="generated-record-image" onClick={() => setView('cover')}>
           <img src={record.cover.imageDataUrl} alt={record.cover.tone + '风格生成的图片'} />
           <span>{record.cover.tone} · 查看图片</span>
         </button>
       )}
-      <section className="detail-section">
+      {mode === 'record' && <section className="detail-section">
         <div className="section-head">
           <h3>
             <Icon name="sparkles" size={18} />
@@ -102,10 +121,6 @@ export default function StudioTab({ record, onClose }) {
           <span className="muted small">你来定调</span>
         </div>
         <TonePicker value={tone} onChange={setTone} />
-        <div className="direction-picker">
-          <ChipGroup options={DIRECTIONS} value={direction} onChange={setDirection} />
-          <span>{DIRECTION_HINT[direction]}</span>
-        </div>
         <div className="process-actions">
           <button
             type="button"
@@ -135,7 +150,7 @@ export default function StudioTab({ record, onClose }) {
         </div>
         {record.processError && (
           <div className="process-error" role="alert">
-            <p>{record.processError.message}</p>
+            <p>{aiErrorMessage(record.processError.message)}</p>
             <button
               type="button"
               className="link-btn"
@@ -158,7 +173,7 @@ export default function StudioTab({ record, onClose }) {
               <div className="output-meta">
                 <span>
                   {output.kind === 'caption' ? '配文' : output.kind === 'rewrite' ? '改写' : '点子'}{' '}
-                  · {output.direction} · {output.tone}
+                  · {output.tone}
                 </span>
                 {['demo', 'example'].includes(output.source) && (
                   <span className="example-label">
@@ -214,8 +229,8 @@ export default function StudioTab({ record, onClose }) {
             {allOutputs ? '收起以前的版本' : `看看全部 ${outputs.length} 个版本`}
           </button>
         )}
-      </section>
-      <section className="detail-section continue-section">
+      </section>}
+      {mode === 'record' && <section className="detail-section continue-section">
         <div className="section-head">
           <h3>
             <Icon name="clock" size={18} />
@@ -266,7 +281,7 @@ export default function StudioTab({ record, onClose }) {
             </button>
           )}
         </div>
-      </section>
+      </section>}
       <section className="detail-section">
         <div className="section-head">
           <h3>

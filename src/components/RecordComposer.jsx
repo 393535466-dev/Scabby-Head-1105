@@ -7,6 +7,7 @@ import Sheet from './Sheet.jsx';
 import Icon from './Icons.jsx';
 import TonePicker from './TonePicker.jsx';
 import ReminderTimeField from './ReminderTimeField.jsx';
+import RecordModePicker from './RecordModePicker.jsx';
 import useVoiceInput from '../lib/useVoiceInput.js';
 
 export default function RecordComposer() {
@@ -193,12 +194,7 @@ export default function RecordComposer() {
                   ? '当前浏览器未开放语音识别。可换用支持语音识别的浏览器，或使用手机键盘的麦克风输入。'
                   : '使用浏览器的语音识别服务，转成文字后可修改。')}
           </div>
-          <div className="capture-mode" role="group" aria-label="记录类型">
-            {[['record', '记录', 'note'], ['reminder', '提醒', 'bell']].map(([value, label, icon]) => (
-              <button key={value} type="button" aria-pressed={mode === value} className={mode === value ? 'active' : ''}
-                onClick={() => { setMode(value); setError(''); }}><Icon name={icon} size={18} />{label}</button>
-            ))}
-          </div>
+          <RecordModePicker value={mode} onChange={(value) => { setMode(value); setError(''); }} />
           {mode === 'record' ? <section className="capture-personality">
             <div className="section-head">
               <h3>这次，想怎么说？</h3>

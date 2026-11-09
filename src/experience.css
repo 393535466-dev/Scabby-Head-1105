@@ -174,7 +174,7 @@ html, body, #root { height: 100%; overflow: hidden; }
 /* 主题色开场，原图图形和中英文字形以深珊瑚棕呈现。 */
 .launch-screen { background: #ff7658; }
 .launch-brand > .brand-mark-image { mix-blend-mode: normal; }
-.launch-enter { background: #612a25; color: #fff0e9; border: 0; font-weight: 500; padding: 13px 24px; }
+.launch-enter { background: #612a25; color: #fff0e9; border: 0; font-size: 16.8px; font-weight: 500; padding: 13px 24px; }
 .launch-enter:hover { background: #4d211d; }
 .header-meta .profile-button { margin-left: 8px; }
 

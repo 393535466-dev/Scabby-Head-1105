@@ -7,7 +7,7 @@ export default function WelcomeScreen({ onEnter, creating }) {
   return (
     <main className="launch-screen">
       <div className="launch-brand">
-        <BrandMark ink="#612a25" />
+        <BrandMark ink="#612a25" animateEyes />
         <h1>
           <BrandWordmark decorative ink="#612a25" />
           <span className="sr-only">臭脑子</span>

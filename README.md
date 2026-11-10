@@ -5,8 +5,8 @@
 ### 产品汇报材料 · 2026-11-10
 
 - [独立汇报网页](https://scabbyhead1105vercal.vercel.app/report/)：支持章节汇报模式、语气演示、一页摘要与离线保存。
-- [产品一页纸 PDF](https://scabbyhead1105vercal.vercel.app/report/product-onepager.pdf) · [可编辑 Word](https://scabbyhead1105vercal.vercel.app/report/product-onepager.docx) · [完整汇报 Word](https://scabbyhead1105vercal.vercel.app/report/product-report.docx)。
-- 文件保存在 `public/report/`，随 Vite 构建复制到 `dist/report/`。网页样式和品牌资源内嵌，下载 HTML 后可离线阅读及演示；Word、PDF 可单独下载。
+- [产品一页纸 PDF](docs/product-report/2026-11-10/product-onepager.pdf) · [可编辑 Word](docs/product-report/2026-11-10/product-onepager.docx) · [完整汇报 Word](docs/product-report/2026-11-10/product-report.docx)。
+- Vercel 仅托管 `public/report/index.html` 汇报网页。Word、PDF 放在 GitHub 的 `docs/product-report/2026-11-10/`，不进入公开构建目录；网页下载入口指向 GitHub。网页样式和品牌资源内嵌，下载 HTML 后可离线阅读及演示。
 - 材料为 11 月 10 日的产品方向与试用方案快照，明确区分已发布基线、本地待发布功能与验证假设。本次发布只增加汇报材料。
 
 ### V0.11 记录首页与头像动效

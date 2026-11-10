@@ -2,6 +2,13 @@
 
 随手记 → 用户选择语气和方向加工 → 选中一个版本 → 生成风格图片或留待再思 → 按时间和分类回看。
 
+### 产品汇报材料 · 2026-11-10
+
+- [独立汇报网页](https://scabbyhead1105vercal.vercel.app/report/)：支持章节汇报模式、语气演示、一页摘要与离线保存。
+- [产品一页纸 PDF](https://scabbyhead1105vercal.vercel.app/report/product-onepager.pdf) · [可编辑 Word](https://scabbyhead1105vercal.vercel.app/report/product-onepager.docx) · [完整汇报 Word](https://scabbyhead1105vercal.vercel.app/report/product-report.docx)。
+- 文件保存在 `public/report/`，随 Vite 构建复制到 `dist/report/`。网页样式和品牌资源内嵌，下载 HTML 后可离线阅读及演示；Word、PDF 可单独下载。
+- 材料为 11 月 10 日的产品方向与试用方案快照，明确区分已发布基线、本地待发布功能与验证假设。本次发布只增加汇报材料。
+
 ### V0.11 记录首页与头像动效
 
 - 保留品牌首屏及个人资料创建流程，进入记录首页后依次出现头像、三个操作泡泡、欢迎语及本地句库文案。点击「喂点新鲜事」「快来记录一下」打开记录面板，「换个说法」「换一句试试」轮换欢迎文案。
